@@ -1,8 +1,231 @@
 # LPC Language Services Changelog
 
+## 1.1.43
+
+-   Fix: [macros expand on hover when in keys for a mapping, but not as values #278](https://github.com/jlchmura/lpc-language-server/issues/278)
+-   Fix: [Macro in union type does not show quickinfo on hover #290](https://github.com/jlchmura/lpc-language-server/issues/290)
+-   [Add FluffOS grammar support for new operators and syntax #292](https://github.com/jlchmura/lpc-language-server/pull/292) (thanks @gesslar!)
+
+## 1.1.42
+
+-   [Hash operator in macros does not parse correctly #286](https://github.com/jlchmura/lpc-language-server/issues/286)
+
+## 1.1.41
+
+-   Maintenance release - no user-facing changes.
+
+## 1.1.40
+
+-   [Parser does not allow mapping type nodes #280](https://github.com/jlchmura/lpc-language-server/issues/280)
+-   [catch statement not being checked #284](https://github.com/jlchmura/lpc-language-server/issues/284)
+
+## 1.1.39
+
+-   [problem with ''' #276](https://github.com/jlchmura/lpc-language-server/issues/276)
+-   [hover information does not love when the param description spans multiple lines #281](https://github.com/jlchmura/lpc-language-server/issues/281)
+
+## 1.1.38
+
+-   ['undefined' as a symbol name is reported as invalid #272](https://github.com/jlchmura/lpc-language-server/issues/272)
+-   [Language server crashes when VSCode does not have a workspace open #274](https://github.com/jlchmura/lpc-language-server/issues/274)
+
+## 1.1.37
+
+-   [Return node does not include expression after newline, resulting in unreachable code warning #261](https://github.com/jlchmura/lpc-language-server/issues/261)
+-   [Diagostic about unread variable not correct when being used in class instantiation #259](https://github.com/jlchmura/lpc-language-server/issues/259)
+-   [Property types are not checked when using new(class) syntax #263](https://github.com/jlchmura/lpc-language-server/issues/263)
+-   [Not getting hints when new()ing a class #260](https://github.com/jlchmura/lpc-language-server/issues/260)
+-   [FluffOS diagnostic incorrect about parameters not being read in lambda #258](https://github.com/jlchmura/lpc-language-server/issues/258)
+-   [LPCDoc variadic type indicator is on the wrong side #249](https://github.com/jlchmura/lpc-language-server/issues/249)
+-   [diagnostic: after a catch block with a return in it, code after is determined to be unreachable #242](https://github.com/jlchmura/lpc-language-server/issues/242)
+-   [Union types not parsed correctly when they contain NamedObjectType nodes #251](https://github.com/jlchmura/lpc-language-server/issues/251)
+-   [array assignment losing flow type #190](https://github.com/jlchmura/lpc-language-server/issues/190)
+
+## 1.1.36
+
+-   [macros named null are not resolving correctly #245](https://github.com/jlchmura/lpc-language-server/issues/245)
+-   [deprecation for enable_commands(void) may not be correct #244](https://github.com/jlchmura/lpc-language-server/issues/244)
+-   [Update documentation and hinting for origin() following merge of FluffOS PR #250](https://github.com/jlchmura/lpc-language-server/issues/250)
+-   [Efun signatures do not resolve their return type when access via inline closure #248](https://github.com/jlchmura/lpc-language-server/issues/248)
+-   [efuns not displayed in autocomplete inside inline closure #254](https://github.com/jlchmura/lpc-language-server/issues/254)
+
+## 1.1.35
+
+-   Fix: `__DIR__` macro set to incorrectly path.
+-   Added support for `file_size` efun in JS helper.
+
+## 1.1.34
+
+-   [Type predicates are not working on object declarations #238](https://github.com/jlchmura/lpc-language-server/issues/238)
+-   Fix: Completions not displaying object-level variables
+-   Fix: Object-level variables not shown as references
+
+## 1.1.33
+
+-   [LPCDoc param names garbled when forward define is in another file #233](https://github.com/jlchmura/lpc-language-server/issues/233)
+-   [Feat: get it to stop counting forward declaration as an overload #229](https://github.com/jlchmura/lpc-language-server/issues/229)
+-   Fix: Display `mapping` keyword instead of global mapping symbol name.
+-   Fix: Function return type was not displayed in completions detail.
+-   Fix: Signature help return type should be LPC-style, not TypeScript.
+-   Fix: Incorrect node positions causing synthetic node warnings.
+-   Fix: Semantic classifier skipping local tokens inside macro context.
+-   Add `never` type to type checker node builder.
+
+## 1.1.32
+
+-   [Function macro with array arg parsed incorrectly. #220](https://github.com/jlchmura/lpc-language-server/issues/220)
+-   [Inline closure should allow statements #206](https://github.com/jlchmura/lpc-language-server/issues/206)
+-   [Class is not a reserved word in LD #224](https://github.com/jlchmura/lpc-language-server/issues/224)
+-   [tooltip for typed object reference from a macro not showing completely or fully, when using LD's syntax #227](https://github.com/jlchmura/lpc-language-server/issues/227)
+-   [`@type` not expanding macros in tooltip #228](https://github.com/jlchmura/lpc-language-server/issues/228)
+-   Fix crash on signature help when typing a macro function without args.
+-   Fix possible max call stack crash with large or open-ended code ranges that are disabled.
+-   Fix: `buffer` and `in` are not reserved words in LD.
+-   Fix name resolution in JSDocLink and JSDocNameReference nodes.
+-   Fix: markdown link rendering in hover info.
+-   Fix: hover not displayed for class/struct types.
+
+## 1.1.31
+
+-   [Allow deprecated modifier #209](https://github.com/jlchmura/lpc-language-server/issues/209)
+-   [Function declaration can have an array indicator with no type #203](https://github.com/jlchmura/lpc-language-server/issues/203)
+-   [Catch modifiers report parser error #207](https://github.com/jlchmura/lpc-language-server/issues/207)
+-   Allow `&` in an LD foreach expression
+-   Fix: Parser error reported in LD when function has struct parameters.
+
+## 1.1.30
+
+-   Fix LD struct parsing error introduced in 1.1.29.
+
+## 1.1.29
+
+-   Fix: [Mapping literal can have newline whitespace between `(` and `[` #202](https://github.com/jlchmura/lpc-language-server/issues/202)
+-   Fix: [Signature hover does not display ref for parameters #210](https://github.com/jlchmura/lpc-language-server/issues/210)
+-   Fix: [Support property access with runtime expression. #208](https://github.com/jlchmura/lpc-language-server/issues/208)
+-   Fix: [Signature hover does not display class types for parameters #199](https://github.com/jlchmura/lpc-language-server/issues/199)
+-   Fix: Circular include directives are now ignored and no longer report a diagnostic
+
+## 1.1.28
+
+-   Lazy Parsing: The language server will now only parse files that are open in the editor or are directly dependent on an open file. This should reduce the memory footprint of the language server and improve performance. Note that running a language feature that analyzes multiple files (such as "Find All References") can still cause a large number of files to be parsed, so it is still recommended that projects be scoped as narrowly as possible using "include" and "exclude" config options.
+-   Performance Improvement: Include files will now only trigger a re-parse of dependent files
+    if a) the dependent file is open in the editor or b) the number of dependent files is less than 25.
+-   Fix some unhandled exceptions in the language server.
+
+## 1.1.27
+
+-   Fix: Scanner should allow whitespace in array/mapping literal
+-   Fix: Properly handle parens in nested macro arguments
+
+## 1.1.26
+
+-   Package for deployment to NPM as [`@lpc-lang/core`](https://www.npmjs.com/package/@lpc-lang/core)
+-   Parse and return default expression in LPCDoc `@param` tags.
+-   Add parser/checker support for LDMud named objects.
+
+## 1.1.25
+
+-   Fix: [catch expression not checked #191](https://github.com/jlchmura/lpc-language-server/issues/191)
+
+## 1.1.24
+
+-   Fix: [Adjust handling of array of arrays #180](https://github.com/jlchmura/lpc-language-server/issues/180)
+-   Fix: [Parser errors when last last is an include directive without a newline #184](https://github.com/jlchmura/lpc-language-server/issues/184)
+-   Fix: [Macro parameter should not get substituted by other macros #186](https://github.com/jlchmura/lpc-language-server/issues/186)
+-   Fix: [Class declarations should allow property declaration lists #188](https://github.com/jlchmura/lpc-language-server/issues/188)
+-   Fix: Import with null text can crash program file load
+-   Improved efun definitions:
+    -   FluffOS [`shutdown`](https://github.com/jlchmura/lpc-language-server/pull/182)
+
+## 1.1.23
+
+-   Fix: [Add $() support to type checker #167](https://github.com/jlchmura/lpc-language-server/issues/167)
+-   Fix: [FluffOS error() efun does not mark unreachable code #175](https://github.com/jlchmura/lpc-language-server/issues/175)
+-   Resolve object names in `@typedef` tags.
+-   FluffOS efun changes:
+    -   Updated [query_num](https://github.com/jlchmura/lpc-language-server/pull/178)
+    -   Added [notify_fail](https://github.com/jlchmura/lpc-language-server/issues/177)
+
+## 1.1.22
+
+-   Fix: [objectp should maintain typed object #168](https://github.com/jlchmura/lpc-language-server/issues/168)
+-   Fix: [Incorrect return type for closure set to a function #170](https://github.com/jlchmura/lpc-language-server/issues/170)
+-   Fix: [arrayp sefun is not changing the flow type to array #171](https://github.com/jlchmura/lpc-language-server/issues/171)
+-   Added support for LPCDoc intersection types
+
+## 1.1.21
+
+-   Fix: [Foreach over an array always results in a string type #161](https://github.com/jlchmura/lpc-language-server/issues/161)
+-   Fix: [Variable in foreach losing type #163](https://github.com/jlchmura/lpc-language-server/issues/163)
+-   Fix: [Flow type lost inside inline closure #164](https://github.com/jlchmura/lpc-language-server/issues/164)
+-   Improved efun typing:
+    -   FluffOS `unique_array`
+    -   Added type guards to several LD efuns
+
+## 1.1.20
+
+-   Fix: [FluffOS `ref` keyword not being parsed correctly. #155](https://github.com/jlchmura/lpc-language-server/issues/155)
+-   Fix: [Object type not resolved when used in a union #156](https://github.com/jlchmura/lpc-language-server/issues/156)
+-   `null` keyword was incorrectly parsed as a reserved word in LPC code.
+-   FluffOS efun improvements (thanks @michaelprograms)
+
+## 1.1.19
+
+-   Fix: [catch blocks should not be block scoped #91](https://github.com/jlchmura/lpc-language-server/issues/91)
+-   Fix: [Foreach with two variables should not report 2405 #94](https://github.com/jlchmura/lpc-language-server/issues/94)
+-   Fix: [Parser error on mapping access with multi args inside a prefix unary expr #150](https://github.com/jlchmura/lpc-language-server/issues/150)
+-   Fix: [Flow node incorrect for variables initialized at the object level #152](https://github.com/jlchmura/lpc-language-server/issues/152)
+-   Fix: Node position incorrect when parsing a macro inside a nested include directive.
+
+## 1.1.18
+
+-   Fix: [Diagnostics are duplicated after running the build task #137](https://github.com/jlchmura/lpc-language-server/issues/137)
+-   Fix: [LPCDoc comment should not be captured by #include #140](https://github.com/jlchmura/lpc-language-server/issues/140)
+-   Fix: [Incorrect signature resolution when function decl does not have doc comment #139](https://github.com/jlchmura/lpc-language-server/issues/139)
+-   Fix: [Editing an .h file should trigger a reparse of files that include it. #143](https://github.com/jlchmura/lpc-language-server/issues/143)
+-   Fix: [Type predicates not working in inherited sefun files. #144](https://github.com/jlchmura/lpc-language-server/issues/144)
+-   Fix: [Fix typings for filter efun and add unit test, closes #145](https://github.com/jlchmura/lpc-language-server/issues/145)
+-   Fix: `#include` directives with a rooted path using workspace root instead of project root.
+-   Fix: this_object() property access not able to resolve protected functions.
+-   Added `.h` to the file extensions that will activate the language server.
+-   Added support for [`@lpc-nocheck`](./README.md#disabling-checks-for-a-single-file---lpc-nocheck) and [`@lpc-ignore`](./README.md#ignoring-a-single-line---lpc-ignore) comment directives.
+
+## 1.1.17
+
+-   Fix: LPCDoc `@var` tag types were incorrectly linked to the original symbol
+-   Performance improvement: reduced memory consumption by 17%
+-   Code cleanup and v8-specific code optimizations
+-   Macro hover now shown for global and pre-defined macros
+-   New: VSCode build task - Run the `LPC: Build` task to validate all files in your project.
+
+## 1.1.16
+
+-   Fix: [Completion provider does not return defines #127](https://github.com/jlchmura/lpc-language-server/issues/127)
+-   Fix: Syntax highlighting should allow whitespace after property access tokens
+-   Fix: LPCDoc type predicates not working
+-   Fixed a bug that could cause @ string blocks to cause the parser to run out of memory.
+-   Performance improvements
+-   Various grammar improvements with indenting, highlighting, and bracketing
+-   Fenced code markdown blocks now highlight using LPC syntax.
+-   Cleaned up server logging (removed TS reference, removed version number)
+
+## 1.1.15
+
+-   [Add localization support #43](https://github.com/jlchmura/lpc-language-server/issues/43) - Thanks to @serenez for contributing.
+-   Remove duplicate import nodes from dependency graph - speeds up recompilation when editing files.
+
+## 1.1.14
+
+-   Fix: [.h file incorrectly marks code as disabled #122](https://github.com/jlchmura/lpc-language-server/issues/122)
+-   Set default max heap size to 3072 and added the `LPC.languageServer.maxLpcServerMemory` configuration option to change.
+-   Detect and report circular `#include` references.
+
 ## 1.1.13
 
+-   Fix: Project info incorrectly reported driver type as FluffOS (see [FluffOS - Maybe classes aren't being parsed properly anymore #113](https://github.com/jlchmura/lpc-language-server/issues/113))
+-   Fix: [Unable to open when going to definition on windows #118](https://github.com/jlchmura/lpc-language-server/issues/118)
 -   Improve program file load order so that driver prefines are consistenly available to all files.
+-   Source files will now reparse when config options that impact compilation are changed.
 
 ## 1.1.12
 

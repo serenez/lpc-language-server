@@ -1,25 +1,26 @@
 {
     "name": "lpc",
     "displayName": "LPC",
-    "version": "1.1.13",
+    "version": "1.1.43",
     "galleryBanner": {
         "color": "#000000",
         "theme": "dark"
     },
-    "description": "Rich language support for LPC (Lars Pensjö C)",
+    "description": "Rich language support for LPC (LDMud/FluffOS branch of LPMud drivers)",
     "main": "out/client/src/extension.js",
     "publisher": "jlchmura",
     "icon": "lpc-icon.png",
+    "bin": {
+        "lpc": "./bin/lpc"
+    },
     "scripts": {
         "start": "npm run compile:bin && NODE_OPTIONS='--enable-source-maps' node out/server/src/bin.js test.c",
-        "vscode:prepublish": "npm run compile",
+        "start:bin": "npm run compile && NODE_OPTIONS='--enable-source-maps' node out/server/src/bin/lpc.js",
+        "vscode:prepublish": "npm run compile && npm run compile:lib",
         "compile": "tsc -b && node ./build.mjs && npm run copy",
-        "compile:bin": "tsc -b && npm run copy && node ./build.bin.mjs",
-        "compile:lib": "tsc -b && npm run copy && node ./build.lib.mjs",
-        "parsefluff": "npm run compile:parsefluff && NODE_OPTIONS='--enable-source-maps' node out/server/src/parse-fluff-docs.js",
-        "parseld": "npm run compile:parseld && NODE_OPTIONS='--enable-source-maps' node out/server/src/parse-ld-docs.js",
-        "compile:parsefluff": "tsc -b && esbuild server/src/parse-fluff-docs.ts --bundle --outdir=out/server/src --external:vscode --platform=node --format=cjs --sourcemap=external --sourcemap",
-        "compile:parseld": "tsc -b && esbuild server/src/parse-ld-docs.ts --bundle --outdir=out/server/src --external:vscode --platform=node --format=cjs --sourcemap=external --sourcemap",
+        "compile:lib": "tsc -b && tsc -p ./server/tsconfig.lib.json && npm run copy && node ./build.lib.js",
+        "package:lib": "ncp ./out/local-dts/src ./lib && ncp ./out/lib ./lib/src && ncp ./efuns ./lib/src/efuns",
+        "lib": "npm run compile:lib && npm run package:lib",
         "watch": "npm run compile -- --sourcemap --watch",
         "lint": "eslint ./client/src ./server/src --ext .ts,.tsx",
         "postinstall": "cd client && npm install && cd ../server && npm install && cd ..",
@@ -47,9 +48,8 @@
         "url": "https://github.com/jlchmura/lpc-language-server"
     },
     "activationEvents": [
-        "onLanguage:lpc",
-        "onLanguage:jsonc",
         "workspaceContains:**/*.c",
+        "workspaceContains:**/*.h",
         "workspaceContains:lpc-config.json"
     ],
     "contributes": {
@@ -85,34 +85,59 @@
                 "language": "lpc",
                 "scopeName": "source.lpc.lang-server",
                 "path": "./syntaxes/lpc.tmLanguage.json"
+            },
+            {
+                "scopeName": "documentation.injection.lpc",
+                "path": "./syntaxes/lpcdoc.injection.tmLanguage.json",
+                "injectTo": [
+                    "source.lpc.lang-server"
+                ]
             }
         ],
         "commands": [],
+        "taskDefinitions": [
+            {
+                "type": "LPC",
+                "required": [
+                    "lpc-config"
+                ],
+                "properties": {
+                    "lpc-config": {
+                        "type": "string",
+                        "description": "The path to the lpc-config.json file"
+                    },
+                    "option": {
+                        "type": "string"
+                    }
+                },
+                "when": "shellExecutionSupported"
+            }
+        ],
         "problemPatterns": [
-        {
-            "name": "lpc",
-            "regexp": "^([^\\s].*)[\\(:](\\d+)[,:](\\d+)(?:\\):\\s+|\\s+-\\s+)(error|warning|info)\\s+lpc(\\d+)\\s*:\\s*(.*)$",
-            "file": 1,
-            "line": 2,
-            "column": 3,
-            "severity": 4,
-            "code": 5,
-            "message": 6
-        }
+            {
+                "name": "lpc",
+                "regexp": "^([^\\s].*)[\\(:](\\d+)[,:](\\d+)(?:\\):\\s+|\\s+-\\s+)(error|warning|info)\\s+LPC(\\d+)\\s*:\\s*(.*)$",
+                "file": 1,
+                "line": 2,
+                "column": 3,
+                "severity": 4,
+                "code": 5,
+                "message": 6
+            }
         ],
         "problemMatchers": [
             {
                 "name": "lpc",
-                "label": "%lpc.problemMatchers.lpc.label%",
-                "owner": "lpc",
-                "source": "lpc",
+                "label": "LPC Compiler Diagnostics",
+                "owner": "lpc",                
+                "source": "LPC",
                 "applyTo": "closedDocuments",
                 "fileLocation": [
-                  "relative",
-                  "${cwd}"
+                    "relative",
+                    "${cwd}"
                 ],
                 "pattern": "$lpc"
-              }
+            }
         ],
         "jsonValidation": [
             {
@@ -156,7 +181,33 @@
                     ]
                 }
             }
-        ]
+        ],
+        "configuration": {
+            "properties": {
+                "LPC.locale": {
+                    "type": "string",
+                    "default": "auto",
+                    "enum": [
+                        "auto",
+                        "en",
+                        "zh-CN"
+                    ],
+                    "enumDescriptions": [
+                        "Use VS Code's configured display language",
+                        "English",
+                        "中文(简体)"
+                    ],
+                    "markdownDescription": "Sets the locale used to report LPC errors. Defaults to use VS Code's locale.",
+                    "scope": "window"
+                },
+                "LPC.languageServer.maxLpcServerMemory": {
+                    "type": "number",
+                    "default": 3072,
+                    "description": "The maximum amount of memory (in MB) to allocate to the LPC language server process.",
+                    "scope": "window"
+                }
+            }
+        }
     },
     "keywords": [
         "LPC",
@@ -189,22 +240,25 @@
         "@types/vscode": "^1.75.0",
         "@typescript-eslint/eslint-plugin": "^5.54.0",
         "@typescript-eslint/parser": "^5.54.0",
+        "esbuild": "^0.23.0",
         "eslint": "^8.35.0",
         "jest": "^29.7.0",
         "markdown-it": "^14.1.0",
+        "ncp": "^2.0.0",
         "ts-jest": "^29.1.4",
         "ts-loader": "^6.2.2",
         "ts-node": "10.9.2",
-        "typescript": "^5.4.5"
+        "typescript": "^5.4.5",
+        "vsce": "^2.15.0"
     },
     "dependencies": {
+        "@actions/core": "^1.11.1",
+        "@actions/github": "^6.0.0",
+        "ansi-styles": "^6.2.1",
         "comment-parser": "^1.4.1",
-        "esbuild": "^0.23.0",
         "glob": "^10.3.15",
         "jsonc-parser": "^3.3.1",
-        "ncp": "^2.0.0",
         "setimmediate": "^1.0.5",
-        "vsce": "^2.15.0",
         "vscode-uri": "^3.0.8"
     }
 }

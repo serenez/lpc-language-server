@@ -4,13 +4,14 @@ import * as protocol from "../server/_namespaces/lpc.server.protocol.js";
 import * as typeConverters from './typeConverters.js';
 import * as PConst from "./protocol.const.js";
 import { URI } from "vscode-uri";
-import { createTextRangeFromSpan } from "../lpc/lpc.js";
+import { IFilePathToResourceConverter } from "./textRendering.js";
 
 const getSymbolKind = (kind: string): ls.SymbolKind => {
 	switch (kind) {
 		case PConst.Kind.module: return ls.SymbolKind.Module;
 		case PConst.Kind.class: return ls.SymbolKind.Class;
 		case PConst.Kind.enum: return ls.SymbolKind.Enum;
+        case PConst.Kind.define: return ls.SymbolKind.Enum;
 		case PConst.Kind.interface: return ls.SymbolKind.Interface;
 		case PConst.Kind.method: return ls.SymbolKind.Method;
 		case PConst.Kind.memberVariable: return ls.SymbolKind.Property;
@@ -151,3 +152,7 @@ export function convertNavTree(
     return shouldInclude;
 }
 
+export function getFileResourceConverter(): IFilePathToResourceConverter {    
+    const converter: IFilePathToResourceConverter = { toResource: (file: string) => file && URI.file(file) };
+    return converter;
+}

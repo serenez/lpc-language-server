@@ -1,4 +1,4 @@
-import { Symbol, ArrowFunction, BinaryExpression, CallLikeExpression, CancellationToken, canHaveSymbol, contains, createPrinterWithRemoveComments, createTextSpan, createTextSpanFromBounds, createTextSpanFromNode, Debug, emptyArray, find, findAncestor, findIndex, findTokenOnLeftOfPosition, first, firstDefined, flatMapToMutable, FunctionExpression, getPossibleTypeArgumentsInfo, Identifier, identity, InternalSymbolName, isArrayBindingPattern, isBinaryExpression, isBindingElement, isBlock, isCallOrNewExpression, isFunctionTypeNode, isIdentifier, isInComment, isInString, isMethodDeclaration, isNoSubstitutionTemplateLiteral, isParameter, isPropertyAccessExpression, isSourceFile, isSpreadElement, isSyntaxList, last, lastOrUndefined, map, mapToDisplayParts, Node, NodeBuilderFlags, ParenthesizedExpression, Program, punctuationPart, Signature, SignatureHelpItem, SignatureHelpItems, SignatureHelpTriggerReason, skipTrivia, SourceFile, spacePart, SpreadElement, SymbolDisplayPart, symbolToDisplayParts, SyntaxKind, SyntaxList, TextRange, TextSpan, tryCast, Type, TypeChecker, TypeParameter, findPrecedingToken, getPossibleGenericSignatures, Expression, getInvokedExpression, EmitHint, ListFormat, factory, SignatureHelpParameter, Printer, isTransientSymbol, CheckFlags, ParameterDeclaration, ConciseBody } from "./_namespaces/lpc.js";
+import { Symbol, ArrowFunction, BinaryExpression, CallLikeExpression, CancellationToken, canHaveSymbol, contains, createPrinterWithRemoveComments, createTextSpan, createTextSpanFromBounds, createTextSpanFromNode, Debug, emptyArray, find, findAncestor, findIndex, findTokenOnLeftOfPosition, first, firstDefined, flatMapToMutable, FunctionExpression, getPossibleTypeArgumentsInfo, Identifier, identity, InternalSymbolName, isArrayBindingPattern, isBinaryExpression, isBindingElement, isBlock, isCallOrNewExpression, isFunctionTypeNode, isIdentifier, isInComment, isInString, isMethodDeclaration, isNoSubstitutionTemplateLiteral, isParameter, isPropertyAccessExpression, isSourceFile, isSpreadElement, isSyntaxList, last, lastOrUndefined, map, mapToDisplayParts, Node, NodeBuilderFlags, ParenthesizedExpression, Program, punctuationPart, Signature, SignatureHelpItem, SignatureHelpItems, SignatureHelpTriggerReason, skipTrivia, SourceFile, spacePart, SpreadElement, SymbolDisplayPart, symbolToDisplayParts, SyntaxKind, SyntaxList, TextRange, TextSpan, tryCast, Type, TypeChecker, TypeParameter, findPrecedingToken, getPossibleGenericSignatures, Expression, getInvokedExpression, EmitHint, ListFormat, factory, SignatureHelpParameter, Printer, isTransientSymbol, CheckFlags, ParameterDeclaration, ConciseBody, tryGetTextOfPropertyName, isInMacroContext } from "./_namespaces/lpc.js";
 
 const enum InvocationKind {
     Call,
@@ -271,6 +271,12 @@ export function getSignatureHelpItems(program: Program, sourceFile: SourceFile, 
         return undefined;
     }
 
+    if (isInMacroContext(startingToken)) {
+        // abort if we are in a macro context
+        // TOOD - show macro fn signature help
+        return undefined;
+    }
+
     // Only need to be careful if the user typed a character and signature help wasn't showing.
     const onlyUseSyntacticOwners = !!triggerReason && triggerReason.kind === "characterTyped";
 
@@ -474,7 +480,7 @@ function createJSSignatureHelpItems(argumentInfo: ArgumentListInfo, program: Pro
     if (argumentInfo.invocation.kind === InvocationKind.Contextual) return undefined;
     // See if we can find some symbol with the call expression name that has call signatures.
     const expression = getExpressionFromInvocation(argumentInfo.invocation);
-    const name = expression && isPropertyAccessExpression(expression) ? expression.name.text : undefined;
+    const name = expression && isPropertyAccessExpression(expression) ? tryGetTextOfPropertyName(expression.name) : undefined;
     const typeChecker = program.getTypeChecker();
     return name === undefined ? undefined : firstDefined(program.getSourceFiles(), sourceFile =>
         firstDefined(sourceFile.getNamedDeclarations().get(name), declaration => {
@@ -594,8 +600,8 @@ const separatorDisplayParts: SymbolDisplayPart[] = [punctuationPart(SyntaxKind.C
 function getSignatureHelpItem(candidateSignature: Signature, callTargetDisplayParts: readonly SymbolDisplayPart[], isTypeParameterList: boolean, checker: TypeChecker, enclosingDeclaration: Node, sourceFile: SourceFile): SignatureHelpItem[] {
     const infos = (isTypeParameterList ? itemInfoForTypeParameters : itemInfoForParameters)(candidateSignature, checker, enclosingDeclaration, sourceFile);
     return map(infos, ({ isVariadic, parameters, prefix, suffix }) => {
-        const prefixDisplayParts = [...callTargetDisplayParts, ...prefix];
-        const suffixDisplayParts = [...suffix, ...returnTypeToDisplayParts(candidateSignature, enclosingDeclaration, checker)];
+        const prefixDisplayParts = [...returnTypeToDisplayParts(candidateSignature, enclosingDeclaration, checker), ...callTargetDisplayParts, ...prefix];
+        const suffixDisplayParts = [...suffix];
         const documentation = candidateSignature.getDocumentationComment(checker);
         const tags = candidateSignature.getJsDocTags();
         return { isVariadic, prefixDisplayParts, suffixDisplayParts, separatorDisplayParts, parameters, documentation, tags };
@@ -634,14 +640,15 @@ function createSignatureHelpParameterForParameter(parameter: Symbol, checker: Ty
 
 function returnTypeToDisplayParts(candidateSignature: Signature, enclosingDeclaration: Node, checker: TypeChecker): readonly SymbolDisplayPart[] {
     return mapToDisplayParts(writer => {
-        writer.writePunctuation(":");
-        writer.writeSpace(" ");
+        // writer.writePunctuation(":");
+        // writer.writeSpace(" ");
         const predicate = checker.getTypePredicateOfSignature(candidateSignature);
         if (predicate) {
             checker.writeTypePredicate(predicate, enclosingDeclaration, /*flags*/ undefined, writer);
         }
         else {
             checker.writeType(checker.getReturnTypeOfSignature(candidateSignature), enclosingDeclaration, /*flags*/ undefined, writer);
+            writer.writeSpace(" ");
         }
     });
 }

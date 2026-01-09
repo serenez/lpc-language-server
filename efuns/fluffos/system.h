@@ -22,9 +22,10 @@ int uptime( void );
  * 
  * Note: do not leave tracing enabled for too long or you will risk running
  * out of memory.
- *
+ * @param filename the file to write the trace data to
+ * @param auto_stop_sec the number of seconds to collect trace data before stopping, defaults to 30 seconds
  */
-void trace_start(string filename, int auto_stop_sec = 30);
+varargs void trace_start(string filename, int auto_stop_sec);
 
 /**
  * trace_end - stop collecting driver trace
@@ -112,7 +113,7 @@ string strftime( string fmt, int time );
  * valid_override(4) up (in master.c) to protect against efun::shutdown().
  *
  */
-void shutdown( int how );
+varargs void shutdown( int how );
 
 /**
  * set_reset - modify the time until reset on an object

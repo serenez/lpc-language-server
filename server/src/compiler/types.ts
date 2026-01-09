@@ -20,38 +20,23 @@ export type SymbolTable = Map<string, Symbol>;
 
 export interface TextRange {
     pos: number;
-    end: number;
-    macro?: string;
+    end: number;    
 }
 
 export interface ReadonlyTextRange {
     readonly pos: number;
-    readonly end: number;
-    readonly macro?: string;
-    readonly isComplete?: boolean;
+    readonly end: number;    
 }
 
-export interface IncludedFileRange {
+export interface MacroIncludedFileRange {
     posInOrigin?: number;
     endInOrigin?: number;
     originFilename?: string;
 }
 
-export interface ReadonlyIncludedFileRange {
-    /** position of the original include directive that resulted in this node */
-    readonly includeDirPos?: number;
-    /** end position of the original include directive that resulted in this nod */
-    readonly includeDirEnd?: number;
-    /** filename containing this node (i.e. the include filename, not the original sourcefile filename) */
-    readonly originFilename?: string;
-    /** position in the origin file (i.e. the include file this node came from) */
-    readonly originPos?: number;
-    /** end in the origin file (i.e. the include file this node came from) */
-    readonly originEnd?: number;
-}
 
 /** Base Node */
-export interface Node extends ReadonlyTextRange, ReadonlyIncludedFileRange {
+export interface Node extends ReadonlyTextRange {
     readonly kind: SyntaxKind;
     readonly flags: NodeFlags;
     /** @internal */ modifierFlagsCache: ModifierFlags;
@@ -94,9 +79,10 @@ export interface EmitNode {
 
 
 
-export interface TypeChecker {
+export interface TypeChecker {    
     getTypeOfSymbol(symbol: Symbol): Type;
     createSymbol(flags: SymbolFlags, name: string, checkFlags?: CheckFlags): TransientSymbol;
+    getDeclaredTypeOfSymbol(symbol: Symbol): Type;
     /** @internal */ getNodeCount(): number;
     /** @internal */ getIdentifierCount(): number;
     /** @internal */ getSymbolCount(): number;
@@ -118,6 +104,9 @@ export interface TypeChecker {
     getAliasedSymbol(symbol: Symbol): Symbol;
     getSymbolAtLocation(node: Node): Symbol | undefined;
     
+    /** @internal */
+    runWithCurrentFile<T>(node: Node, callback: () => T);
+
     getTypeOfSymbolAtLocation(symbol: Symbol, node: Node): Type;
     getRootSymbols(symbol: Symbol): readonly Symbol[];
     
@@ -231,7 +220,7 @@ export interface TypeChecker {
     /** @internal */ getUnionType(types: Type[], subtypeReduction?: UnionReduction): Type;
     getAugmentedPropertiesOfType(type: Type): Symbol[];
     getPropertiesOfType(type: Type): Symbol[];
-    
+    /** @internal */ getRelationCacheSizes(): { assignable: number; identity: number; subtype: number; strictSubtype: number; };
     /**
      * Note that this will return undefined in the following case:
      *     // a.ts
@@ -751,7 +740,8 @@ export const enum SyntaxKind {
     GreaterThanGreaterThanGreaterThanEqualsToken,
     AmpersandEqualsToken,
     BarEqualsToken,
-    BarBarEqualsToken,    
+    BarBarEqualsToken,
+    AmpersandAmpersandEqualsToken,
     QuestionQuestionEqualsToken,
     CaretEqualsToken, // last assignment
 
@@ -770,20 +760,17 @@ export const enum SyntaxKind {
     IntKeyword, // FIrst Keyword, FirstReserved Word
     FloatKeyword,    
     StringKeyword,
-    LwObjectKeyword,        
-    UndefinedKeyword,
+    LwObjectKeyword,            
     AnyKeyword,    
     ClosureKeyword,
     StructKeyword,
     CatchKeyword,    
     MixedKeyword,
-    UnknownKeyword,    
-    InKeyword,
+    UnknownKeyword,        
     MappingKeyword,
     VoidKeyword,
     BreakKeyword,
-    BytesKeyword,
-    BufferKeyword,    
+    BytesKeyword,    
     DoKeyword,
     ElseKeyword,
     ForKeyword,
@@ -815,16 +802,20 @@ export const enum SyntaxKind {
     // non-reserved keywords go below this line
     ClassKeyword,
     StatusKeyword,
+    UndefinedKeyword,
     FalseKeyword,       // JSON-only
     TrueKeyword,        // JSON-only
     NullKeyword,        // JSON-only    
+    NeverKeyword,       // typenode only
     FunctionKeyword,    // can be used as a param name
     SymbolKeyword,      // not reserved in fluffos
     ObjectKeyword,      // can occur in a super expr i.e.  object::fn()
     RefKeyword,         // fluff only
+    BufferKeyword,      // fluff only
     IsKeyword,          // use for type predicates only
     FunctionsKeyword,   // inherit modifier
     VirtualKeyword,     // inherit modifier
+    InKeyword,          // not a reserved word in LD (maybe fluff?)
     NewKeyword,         // LastKeyword and LastToken - everything after this will be processed by the binder
 
     // Parse Tree Nodes
@@ -852,13 +843,15 @@ export const enum SyntaxKind {
     FunctionType,
     IntersectionType,
     RestType,
-    ArrayType,
-    TupleType,
+    ArrayType,    
+    MappingType,
+    TupleType,    
     TypeLiteral,
     TypeQuery,
     ParenthesizedType,
     TypeReference,
     TypePredicate,
+    NamedObjectType,
     ConditionalType,  // Last TYpe Node
     
     // Elements
@@ -1094,6 +1087,7 @@ export const enum TypeFlags {
     Reserved1       = 1 << 29,  // Used by union/intersection type construction
     /** @internal */
     Reserved2       = 1 << 30,  // Used by union/intersection type construction
+    LpcDocVariable  = 1 << 31,  // Used by types assigned from jsdoc @var tags
 
     /** @internal */
     AnyOrUnknown = Any | Unknown,
@@ -1209,6 +1203,7 @@ export const enum NodeFlags {
     ExternalFile       = 1 << 2,  // Included from an external file     
     Synthesized        = 1 << 4,  // Node was synthesized during transformation        
     IncludeContext     = 1 << 5,  // Node was parsed from an include file
+    MacroContext       = 1 << 6,  // Node was parsed as a result of a macro expansion
     ExportContext      = 1 << 7,  // Export context (initialized by binding)
     HasImplicitReturn  = 1 << 9,  // If function implicitly returns on one of codepaths (initialized by binding)
     HasExplicitReturn  = 1 << 10,  // If function has explicit reachable return on one of codepaths (initialized by binding)
@@ -1219,13 +1214,14 @@ export const enum NodeFlags {
     AwaitContext       = 1 << 16, // If node was parsed in the 'await' context created when parsing an async function
     DisallowCommaContext = 1 << 17, // If node was parsed in a context where comma expr are not allow
     ThisNodeHasError   = 1 << 18, // If the parser encountered an error when parsing the code that created this node
-    JavaScriptFile     = 1 << 19, // If node was parsed in a JavaScript
+    DisallowConditionalTypesContext     = 1 << 19, 
     ThisNodeOrAnySubNodesHasError = 1 << 20, // If this node or any of its children had an error
     HasAggregatedChildData = 1 << 21, // If we've computed data from children and cached it in this node
     OptionalChain       = 1 << 22, // not used
-    
-    JSDoc                                          = 1 << 24, // If node was parsed inside jsdoc
-    /** @internal */ Ambient                       = 1 << 25, // If node was inside an ambient context -- a declaration file, or inside something with the `declare` modifier.
+    DisallowPipeContext = 1 << 23, // If node was parsed in a context where '|' operators are not allowed
+    CatchContext        = 1 << 24, // If node was parsed in the 'catch' context created when parsing a catch clause
+    JSDoc                                          = 1 << 25, // If node was parsed inside jsdoc
+    /** @internal */ Ambient                       = 1 << 26, // If node was inside an ambient context -- a declaration file, or inside something with the `declare` modifier.
     /** @internal */ TypeCached                    = 1 << 28, // If a type was cached for node at any point
     /** @internal */ Deprecated                    = 1 << 29, // If has '@deprecated' JSDoc tag
 
@@ -1233,7 +1229,7 @@ export const enum NodeFlags {
     ReachabilityAndEmitFlags = ReachabilityCheckFlags,
 
     // Parsing context flags
-    ContextFlags = DisallowInContext | DisallowCommaContext | YieldContext | DisallowTypes | AwaitContext | JavaScriptFile | Ambient,
+    ContextFlags = DisallowInContext | DisallowCommaContext | YieldContext | DisallowTypes | AwaitContext | DisallowConditionalTypesContext | MacroContext | IncludeContext | Ambient,
 
     // parse set flags
     BlockScoped = Variable,
@@ -1241,6 +1237,8 @@ export const enum NodeFlags {
     // The following flags repurpose other NodeFlags as different meanings for Identifier nodes
     /** @internal */ IdentifierHasExtendedUnicodeEscape = 1 << 8, // Indicates whether the identifier contains an extended unicode escape sequence
     /** @internal */ IdentifierIsInJSDocNamespace = HasAsyncFunctions, // Indicates whether the identifier is part of a JSDoc namespace
+
+    IncludeOrMacro = IncludeContext | MacroContext // Indicates the node is in an include or macro context
 }
 
 export const enum EmitFlags {
@@ -1383,7 +1381,9 @@ export const enum TransformFlags {
     None = 0,
     ContainsRestOrSpread,
     ContainsFluffOS,
-    ContainsLDMud
+    ContainsLDMud,
+    ContainsHoistedDeclarationOrCompletion,
+    ContainsUpdateExpressionForIdentifier
 }
 
 export type KeywordTypeSyntaxKind =
@@ -1405,6 +1405,7 @@ export type KeywordTypeSyntaxKind =
     // | SyntaxKind.SymbolKeyword
     | SyntaxKind.UndefinedKeyword
     | SyntaxKind.UnknownKeyword
+    | SyntaxKind.NeverKeyword
     | SyntaxKind.VoidKeyword;    
 
 export type TokenSyntaxKind =
@@ -1426,6 +1427,7 @@ export type TypeNodeSyntaxKind =
     | SyntaxKind.IndexedAccessType
     | SyntaxKind.StructType
     | SyntaxKind.ArrayType
+    | SyntaxKind.MappingType
     | SyntaxKind.LiteralType
     | SyntaxKind.ThisType
     | SyntaxKind.TypePredicate
@@ -1436,6 +1438,8 @@ export type TypeNodeSyntaxKind =
     | SyntaxKind.ExpressionWithTypeArguments
     | SyntaxKind.FunctionType
     | SyntaxKind.ConditionalType
+    | SyntaxKind.IntersectionType
+    | SyntaxKind.NamedObjectType
     | SyntaxKind.JSDocTypeExpression
     | SyntaxKind.JSDocAllType
     | SyntaxKind.JSDocUnknownType
@@ -1448,7 +1452,7 @@ export type TypeNodeSyntaxKind =
     | SyntaxKind.JSDocSignature
     | SyntaxKind.JSDocTypeLiteral;
 
-export type PropertyName = Identifier | StringLiteral | IntLiteral | ComputedPropertyName;
+export type PropertyName = Identifier | StringLiteral | IntLiteral | ComputedPropertyName | ParenthesizedExpression;
 export type MemberName = Identifier;// | Expression;
 
 export type DeclarationName =
@@ -1569,11 +1573,14 @@ export interface NodeFactory {
     createTypeReferenceNode(typeName: string | EntityName, typeArguments?: readonly TypeNode[]): TypeReferenceNode;
     updateTypeReferenceNode(node: TypeReferenceNode, typeName: EntityName, typeArguments: NodeArray<TypeNode> | undefined): TypeReferenceNode;
     createUnionTypeNode(types: readonly TypeNode[]): UnionTypeNode;
+    createIntersectionTypeNode(types: readonly TypeNode[]): IntersectionTypeNode;
     createArrayTypeNode(elementType: TypeNode): ArrayTypeNode;
+    createMappingTypeNode(keyType: TypeNode, valueTypes: NodeArray<TypeNode>): MappingTypeNode;
+    createNamedObjectTypeNode(name: StringLiteral | BinaryExpression | ParenthesizedExpression, objectKeyword: TypeNode): NamedObjectTypeNode;
     createParenthesizedType(type: TypeNode): ParenthesizedTypeNode;
     createLiteralTypeNode(literal: LiteralTypeNode["literal"]): LiteralTypeNode;
     createTypeLiteralNode(members: readonly TypeElement[] | undefined): TypeLiteralNode;
-    createStructTypeNode(name: Identifier): StructTypeNode;
+    createStructTypeNode(name: Identifier, keyword: StructKeywordSyntaxKind): StructTypeNode;
     createPropertySignature(modifiers: readonly Modifier[] | undefined, name: PropertyName | string, type: TypeNode | undefined): PropertySignature;
     createStructDeclarationNode(
         modifiers: readonly Modifier[] | undefined,
@@ -1602,9 +1609,9 @@ export interface NodeFactory {
     createForEachStatement(initializer: ForInitializer | undefined, range: Expression | undefined, statement: Statement): ForEachStatement;
     createDoWhileStatement(statement: Statement, expression: Expression): DoWhileStatement;
     createWhileStatement(statement: Statement, expression: Expression): WhileStatement;
-    createParameterDeclaration(modifiers: readonly Modifier[] | undefined, dotDotDotToken: DotDotDotToken | undefined, name: string | BindingName, ampToken?: AmpersandToken, type?: TypeNode, initializer?: Expression): ParameterDeclaration;
+    createParameterDeclaration(modifiers: readonly Modifier[] | undefined, dotDotDotToken: DotDotDotToken | undefined, name: string | BindingName, ampToken?: AmpersandToken | RefToken, type?: TypeNode, initializer?: Expression): ParameterDeclaration;
     /** @internal */ createMissingDeclaration(): MissingDeclaration;
-    createCatchStatement(expression: Expression | undefined, block: Block): CatchStatement;
+    createCatchStatement(expression: Expression | undefined, block: Block, modifier?: Identifier, modifierExpression?: Expression): CatchStatement;
 
     // Expressions
     createExpressionWithTypeArguments(expression: Expression, typeArguments: readonly TypeNode[] | undefined): ExpressionWithTypeArguments;
@@ -1612,7 +1619,7 @@ export interface NodeFactory {
     createEvaluateExpression(expression: Expression, argumentsArray: readonly Expression[] | undefined): EvaluateExpression;
     createNewExpression(expression: Expression|TypeNode|undefined, typeArguments: readonly TypeNode[] | undefined, argumentsArray: readonly NewExpressionArgument[] | undefined): NewExpression;
     createSpreadElement(expression: Expression): SpreadElement;
-    createByRefElement(expr: Expression): ByRefElement;
+    createByRefElement(ampToken: AmpersandToken | RefToken, expr: Expression): ByRefElement;
     createFunctionExpression(modifiers: readonly Modifier[] | undefined, name: string | Identifier | undefined, parameters: readonly ParameterDeclaration[] | undefined, type: TypeNode | undefined, body: Block): FunctionExpression;
     createOmittedExpression(): OmittedExpression;
     createParenthesizedExpression(expression: Expression): ParenthesizedExpression;
@@ -1641,7 +1648,7 @@ export interface NodeFactory {
     // JSDoc
     createJSDocText(text: string): JSDocText;
     createJSDocComment(comment?: string | NodeArray<JSDocComment> | undefined, tags?: readonly JSDocTag[] | undefined): JSDoc;
-    createJSDocParameterTag(tagName: Identifier | undefined, name: EntityName, isBracketed: boolean, typeExpression?: JSDocTypeExpression, isNameFirst?: boolean, comment?: string | NodeArray<JSDocComment>): JSDocParameterTag;
+    createJSDocParameterTag(tagName: Identifier | undefined, name: EntityName, defaultExpression: Expression | undefined, isBracketed: boolean, typeExpression?: JSDocTypeExpression, isNameFirst?: boolean, comment?: string | NodeArray<JSDocComment>): JSDocParameterTag;
     createJSDocReturnTag(tagName: Identifier | undefined, typeExpression?: JSDocTypeExpression, comment?: string | NodeArray<JSDocComment>): JSDocReturnTag;
     createJSDocOptionalType(type: TypeNode): JSDocOptionalType;
     createJSDocTypeTag(tagName: Identifier | undefined, typeExpression: JSDocTypeExpression, comment?: string | NodeArray<JSDocComment>): JSDocTypeTag;
@@ -1755,6 +1762,7 @@ export interface CompilerOptions {
     diagnostics?: boolean;
     libIncludeDirs?: string[];
     globalIncludeFiles?: string[];    
+    resolvedGlobalIncludeFiles?: string[];
 
     [option: string]: CompilerOptionsValue | LpcConfigSourceFile | undefined;
 }
@@ -1934,6 +1942,7 @@ export type IsContainer =
     // | ClassStaticBlockDeclaration
     | FunctionExpression
     | InlineClosureExpression
+    | NewExpression
     | ArrowFunction;
 
 /**
@@ -2205,6 +2214,7 @@ export type HasChildren =
     | InheritDeclaration
     | InferTypeNode
     | IncludeDirective
+    | IntersectionTypeNode
     | ParameterDeclaration        
     | ByRefElement
     | EvaluateExpression
@@ -2239,9 +2249,10 @@ export type HasChildren =
     // | TupleTypeNode
     // | OptionalTypeNode
     // | RestTypeNode
-    | ArrayTypeNode
+    | ArrayTypeNode    
     | UnionTypeNode
     | TypeAssertion
+    | NamedObjectTypeNode
     // | IntersectionTypeNode
     // | ConditionalTypeNode
     // | InferTypeNode    
@@ -2318,13 +2329,15 @@ export type HasChildren =
 
 export interface NodeArray<T extends Node> extends ReadonlyArray<T>, ReadonlyTextRange {
     readonly hasTrailingComma: boolean;
-    /** @internal */ transformFlags: TransformFlags; // Flags for transforms, possibly undefined
+    /** @internal */ transformFlags: TransformFlags; // Flags for transforms, possibly undefined    
+    readonly isComplete?: boolean;
 }
 
 /** @internal */
 export interface MutableNodeArray<T extends Node> extends Array<T>, TextRange {
     hasTrailingComma: boolean;
     /** @internal */ transformFlags: TransformFlags; // Flags for transforms, possibly undefined
+    isComplete?: boolean;
 }
 
 // TODO(rbuckton): Constraint 'TKind' to 'TokenSyntaxKind'
@@ -2346,6 +2359,9 @@ export type DirectiveSyntaxKind =
     | SyntaxKind.EndIfDirective
     | SyntaxKind.PragmaDirective;
     
+export type StructKeywordSyntaxKind = 
+    | SyntaxKind.StructKeyword
+    | SyntaxKind.ClassKeyword;
 
 export type KeywordSyntaxKind =
     | SyntaxKind.AnyKeyword    
@@ -2380,6 +2396,7 @@ export type KeywordSyntaxKind =
     | SyntaxKind.InheritKeyword
     | SyntaxKind.NewKeyword
     | SyntaxKind.NullKeyword
+    | SyntaxKind.NeverKeyword
     | SyntaxKind.ReturnKeyword
     | SyntaxKind.SwitchKeyword
     | SyntaxKind.WhileKeyword
@@ -2566,7 +2583,7 @@ export type EqualityOperator =
 export type EqualityOperatorOrHigher = RelationalOperatorOrHigher | EqualityOperator;
 export type BitwiseOperator = SyntaxKind.AmpersandToken | SyntaxKind.BarToken | SyntaxKind.CaretToken;
 export type BitwiseOperatorOrHigher = EqualityOperatorOrHigher | BitwiseOperator;
-export type LogicalOperator = SyntaxKind.AmpersandAmpersandToken | SyntaxKind.BarBarToken;
+export type LogicalOperator = SyntaxKind.AmpersandAmpersandToken | SyntaxKind.BarBarToken | SyntaxKind.QuestionQuestionToken;
 export type LogicalOperatorOrHigher = BitwiseOperatorOrHigher | LogicalOperator;
 
 export type CompoundAssignmentOperator =
@@ -2583,6 +2600,8 @@ export type CompoundAssignmentOperator =
     | SyntaxKind.GreaterThanGreaterThanGreaterThanEqualsToken
     | SyntaxKind.GreaterThanGreaterThanEqualsToken
     | SyntaxKind.BarBarEqualsToken
+    | SyntaxKind.AmpersandAmpersandEqualsToken
+    | SyntaxKind.QuestionQuestionEqualsToken
     ;
 
 export type AssignmentOperator = | SyntaxKind.EqualsToken | CompoundAssignmentOperator;
@@ -2591,7 +2610,10 @@ export type AssignmentOperatorOrHigher = | LogicalOperatorOrHigher | AssignmentO
 export type BinaryOperator = AssignmentOperatorOrHigher | SyntaxKind.CommaToken;
 export type BinaryOperatorToken = Token<BinaryOperator>;
 
-export type LogicalOrCoalescingAssignmentOperator = SyntaxKind.BarBarEqualsToken;
+export type LogicalOrCoalescingAssignmentOperator =
+    | SyntaxKind.BarBarEqualsToken
+    | SyntaxKind.AmpersandAmpersandEqualsToken
+    | SyntaxKind.QuestionQuestionEqualsToken;
 
 export type LambdaOperatorToken = Token<PunctuationSyntaxKind>;
 
@@ -2614,6 +2636,15 @@ export type PlusToken = PunctuationToken<SyntaxKind.PlusToken>;
 export type MinusToken = PunctuationToken<SyntaxKind.MinusToken>;
 
 export type PropertyAccessToken = DotToken | MinusGreaterThanToken;
+
+export type JSDocImportCandidateNode = 
+    | JSDocParameterTag
+    | JSDocTypeTag
+    | JSDocTypedefTag
+    | JSDocVariableTag
+    | JSDocPropertyTag
+    | JSDocReturnTag
+    ;
 
 export type JSDocSyntaxKind =
     | SyntaxKind.EndOfFileToken
@@ -2664,7 +2695,7 @@ export type FlowNode =
 // property for the containing control flow).
 /** @internal */
 export interface FlowStart extends FlowNodeBase {
-    node: FunctionExpression | undefined;//| ArrowFunction | MethodDeclaration | GetAccessorDeclaration | SetAccessorDeclaration | undefined;
+    node: FunctionExpression | ArrowFunction | InlineClosureExpression | MethodDeclaration | FunctionDeclaration | undefined;
     antecedent: undefined;
 }
 
@@ -2963,6 +2994,10 @@ export interface SourceFileBase {
     /** @internal */ lineMap?: readonly number[];
     /** @internal */ getPositionOfLineAndCharacter?(line: number, character: number, allowEdits?: true): number;            
 
+    // File-level diagnostics reported by the parser (includes diagnostics about /// references
+    // as well as code diagnostics).
+    /** @internal */ parseDiagnostics: DiagnosticWithLocation[];    
+
     languageVersion: ScriptTarget;
     languageVariant: LanguageVariant;
 }
@@ -3110,6 +3145,10 @@ export interface SourceFile extends Declaration, LocalsContainer, HasHeritageCon
 
     /** Macros that were parsed in this source file (and any includes) */
     parsedMacros?: ReadonlyMap<string, string>;
+
+    /** When a node is parsed as a result of a macro expansion, a link from the node 
+     * to the original macro definition is stored here. */     
+    nodeMacroMap?: ReadonlyMap<Node, string>;
 }
 
 export interface JsonSourceFile extends SourceFile {
@@ -3163,7 +3202,7 @@ export interface CheckLpcDirective extends TextRange {
 export interface ReadonlyPragmaContext {
     languageVersion: ScriptTarget;
     pragmas?: ReadonlyPragmaMap;
-    checkLpcDirective?: CheckLpcDirective;    
+    checkLpcDirective: CheckLpcDirective;    
     referencedFiles: readonly FileReference[];
     typeReferenceDirectives: readonly FileReference[];
     libReferenceDirectives: readonly FileReference[];
@@ -3205,8 +3244,10 @@ export type ImportCandidateNode =
     InheritDeclaration | 
     IncludeDirective |
     CallExpression |
+    NamedObjectTypeNode |
     JSDocParameterTag |
     JSDocTypeTag | 
+    JSDocTypedefTag |
     JSDocPropertyTag |
     JSDocVariableTag |
     JSDocReturnTag
@@ -3285,11 +3326,13 @@ export const enum SymbolFlags {
     Transient               = 1 << 25,  // Transient symbol (created during type check)
     Assignment              = 1 << 26,  // Assignment treated as declaration (eg `this.prop = 1`)
     ModuleExports           = 1 << 27,  // Symbol for CommonJS `module` of `module.exports`
+    Define                  = 1 << 28,  // Define macro
     All = -1,
 
     Enum = RegularEnum | ConstEnum,
     Variable = FunctionScopedVariable | BlockScopedVariable,
     Value = Variable | Property | EnumMember | ObjectLiteral | Function | Class | Enum | ValueModule | Method | GetAccessor | SetAccessor,
+    ValueOrDefine = Value | Define,
     Type = Class | Interface | Enum | EnumMember | TypeLiteral | TypeParameter | TypeAlias,
     Namespace = ValueModule | NamespaceModule | Enum,
     Module = ValueModule | NamespaceModule,
@@ -3301,12 +3344,13 @@ export const enum SymbolFlags {
 
     // Block-scoped declarations are not allowed to be re-declared
     // they can not merge with anything in the value space
-    BlockScopedVariableExcludes = Value,
+    BlockScopedVariableExcludes = Value | Define,
 
     ParameterExcludes = Value,
     PropertyExcludes = None,
     EnumMemberExcludes = Value | Type,
     FunctionExcludes = Value & ~(Function | ValueModule | Class),
+    DefineExcludes = Value & ~(Define | ValueModule),
     ClassExcludes = (Value | Type) & ~(ValueModule | Interface | Function), // class-interface mergability done in checker.ts
     InterfaceExcludes = Type & ~(Interface | Class),
     RegularEnumExcludes = (Value | Type) & ~(RegularEnum | ValueModule), // regular enums merge only with regular enums and modules
@@ -3365,7 +3409,7 @@ export interface FloatLiteral extends LiteralExpression, Declaration {
     readonly numericLiteralFlags: TokenFlags;
 }
 
-export type PropertyNameLiteral = Identifier | StringLiteral | IntLiteral;
+export type PropertyNameLiteral = Identifier | StringLiteral | IntLiteral ;
 
 export interface StringLiteral extends LiteralExpression, Declaration {
     readonly kind: SyntaxKind.StringLiteral;
@@ -3415,9 +3459,22 @@ export interface UnionTypeNode extends TypeNode {
     readonly types: NodeArray<TypeNode>;
 }
 
+export interface IntersectionTypeNode extends TypeNode {
+    readonly kind: SyntaxKind.IntersectionType;
+    readonly types: NodeArray<TypeNode>;
+}
+
+
+
 export interface ArrayTypeNode extends TypeNode {
     readonly kind: SyntaxKind.ArrayType;
     readonly elementType: TypeNode;
+}
+
+export interface NamedObjectTypeNode extends TypeNode {
+    readonly kind: SyntaxKind.NamedObjectType;
+    readonly objectKeyword: TypeNode;
+    readonly name: StringLiteral | BinaryExpression | ParenthesizedExpression;
 }
 
 export interface JSDocContainer extends Node {
@@ -3439,6 +3496,7 @@ export type EntityName = Identifier | QualifiedName;
 export interface JSDocPropertyLikeTag extends JSDocTag, Declaration {
     readonly parent: JSDoc;
     readonly name: EntityName;
+    readonly defaultExpression: Expression | undefined;
     readonly typeExpression?: JSDocTypeExpression;
     /** Whether the property name came before the type -- non-standard for JSDoc, but Typescript-like */
     readonly isNameFirst: boolean;
@@ -3574,6 +3632,8 @@ export interface CatchStatement extends Statement, LocalsContainer {
     readonly parent: Block;
     readonly expression?: Expression;
     readonly block: Block;
+    readonly modifier?: Identifier;
+    readonly modifierExpression?: Expression;
 }
 
 export interface CatchExpression extends PrimaryExpression {
@@ -3652,7 +3712,7 @@ export interface ParameterDeclaration extends NamedDeclaration, JSDocContainer {
     readonly modifiers?: NodeArray<Modifier>;
     readonly dotDotDotToken?: DotDotDotToken;    // Present on rest parameter
     readonly name: BindingName;                  // Declared parameter name.
-    readonly ampToken?: AmpersandToken;          // Present on "by ref" parameters
+    readonly ampToken?: AmpersandToken | RefToken;          // Present on "by ref" parameters
     readonly type?: TypeNode;                    // Optional type annotation
     readonly initializer?: Expression;           // Optional initializer    
 }
@@ -3742,7 +3802,7 @@ export interface DeclarationStatement extends NamedDeclaration, Statement {
     readonly name?: Identifier | StringLiteral | IntLiteral;
 }
 
-export interface FunctionDeclaration extends FunctionLikeDeclarationBase, DeclarationStatement, LocalsContainer {
+export interface FunctionDeclaration extends FunctionLikeDeclarationBase, DeclarationStatement, LocalsContainer, FlowContainer {
     readonly kind: SyntaxKind.FunctionDeclaration;
     readonly modifiers?: NodeArray<Modifier>;
     readonly name?: Identifier;
@@ -3893,7 +3953,7 @@ export type CaseOrDefaultClause =
 export interface PropertyAccessExpression extends MemberExpression, NamedDeclaration, JSDocContainer, FlowContainer {
     readonly kind: SyntaxKind.PropertyAccessExpression;
     readonly expression: LeftHandSideExpression;        
-    readonly name: MemberName;
+    readonly name: MemberName | ParenthesizedExpression;
     readonly propertyAccessToken: PropertyAccessToken
 }
 
@@ -4073,6 +4133,7 @@ export const enum SignatureFlags {
     HasLiteralTypes = 1 << 1,           // Indicates signature is specialized
     Abstract = 1 << 2,                  // Indicates signature comes from an abstract class, abstract construct signature, or abstract constructor type
     IsVarArgs = 1 << 3,                 // Indicates signature is a varargs signature
+    HasJsDoc = 1 << 4,                  // Indicates signature's declaration has JSDoc comments
 
     // Non-propagating flags
     IsInnerCallChain = 1 << 6,          // Indicates signature comes from a CallChain nested in an outer OptionalChain
@@ -4357,6 +4418,7 @@ export interface ByRefElement extends Expression {
     readonly kind: SyntaxKind.ByRefElement;
     readonly parent: CallExpression | NewExpression;
     readonly expression: Expression;
+    readonly refToken: RefToken | AmpersandToken;
 }
 
 
@@ -4367,7 +4429,7 @@ export interface ObjectLiteralElement extends NamedDeclaration {
 
 export interface PropertyAssignment extends ObjectLiteralElement, JSDocContainer {
     readonly kind: SyntaxKind.PropertyAssignment;
-    readonly parent: ObjectLiteralExpression;
+    readonly parent: NewExpression;
     readonly name: PropertyName;
     readonly initializer: Expression;
 
@@ -4494,7 +4556,7 @@ export interface EvaluateExpression extends PrimaryExpression {
     readonly arguments: NodeArray<Expression>;
 }
 
-export interface NewExpression extends PrimaryExpression, Declaration {
+export interface NewExpression extends PrimaryExpression, Declaration, LocalsContainer {
     readonly kind: SyntaxKind.NewExpression;
     readonly expression?: LeftHandSideExpression | TypeNode | undefined;
     readonly typeArguments?: NodeArray<TypeNode>;
@@ -4518,6 +4580,7 @@ export interface SymbolLinks {
     aliasTarget?: Symbol,                       // Resolved (non-alias) target of an alias
     target?: Symbol;                            // Original version of an instantiated symbol
     type?: Type;                                // Type of value symbol
+    localVarType?: Map<string, Type>;           // File-specific overrides of var types (using @var LPCDoc tag)
     writeType?: Type;                           // Type of value symbol in write contexts
     nameType?: Type;                            // Type associated with a late-bound symbol
     uniqueESSymbolType?: Type;                  // UniqueESSymbol type for a symbol
@@ -4655,7 +4718,8 @@ export interface TypeLiteralNode extends TypeNode, Declaration {
 }
 
 
-export type ObjectTypeDeclaration =    TypeLiteralNode;
+
+export type ObjectTypeDeclaration = TypeLiteralNode;
 
 export interface IndexSignatureDeclaration extends SignatureDeclarationBase, ClassElement, TypeElement, LocalsContainer {
     readonly kind: SyntaxKind.IndexSignature;
@@ -4816,6 +4880,7 @@ export interface LiteralTypeNode extends TypeNode {
 
 export interface StructTypeNode extends TypeNode {
     readonly kind: SyntaxKind.StructType;
+    readonly keyword: StructKeywordSyntaxKind;
     readonly typeName: EntityName;
 }
 
@@ -4932,6 +4997,12 @@ export const enum LanguageVariant {
     Standard
 }
 
+export const DriverTypeMap = [
+    "LDMud",
+    "FluffOS",
+    "Standard"
+]
+
 export const enum JSDocParsingMode {
     /**
      * Always parse JSDoc comments and include them in the AST.
@@ -5025,6 +5096,16 @@ export interface Program extends ScriptReferenceHost {
     getSourceFiles(): readonly SourceFile[];
 
     /**
+     * Get a list of files that are parsable
+     */
+    getParseableFiles(): ReadonlySet<Path> | undefined;
+
+    /**
+     * Gets a type checker that can be used to semantically analyze source files in the program.
+     */
+    getTypeChecker(): TypeChecker;
+    
+    /**
      * Get a list of file names that were passed to 'createProgram' or referenced in a
      * program source file but could not be located.
      *
@@ -5033,7 +5114,7 @@ export interface Program extends ScriptReferenceHost {
     getMissingFilePaths(): Map<Path, string>;
     /** @internal */
     getModuleResolutionCache(): /*ModuleResolutionCache | */undefined;
-    // /** @internal */
+    /** @internal */
     getFilesByNameMap(): Map<Path, SourceFile | false | undefined>;
 
     /** @internal */
@@ -5052,7 +5133,8 @@ export interface Program extends ScriptReferenceHost {
     forEachResolvedModule(
         callback: (resolution: ResolvedModuleWithFailedLookupLocations, moduleName: string, mode: ResolutionMode, filePath: Path) => void,
         file?: SourceFile,
-    ): void;
+    ): void;    
+    
     // /** @internal */
     // forEachResolvedTypeReferenceDirective(
     //     callback: (resolution: ResolvedTypeReferenceDirectiveWithFailedLookupLocations, moduleName: string, mode: ResolutionMode, filePath: Path) => void,
@@ -5084,12 +5166,8 @@ export interface Program extends ScriptReferenceHost {
     /** @internal */ getSuggestionDiagnostics(sourceFile: SourceFile, cancellationToken?: CancellationToken): readonly DiagnosticWithLocation[];
 
     // /** @internal */ getBindAndCheckDiagnostics(sourceFile: SourceFile, cancellationToken?: CancellationToken): readonly Diagnostic[];
-    // /** @internal */ getProgramDiagnostics(sourceFile: SourceFile, cancellationToken?: CancellationToken): readonly Diagnostic[];
-
-    /**
-     * Gets a type checker that can be used to semantically analyze source files in the program.
-     */
-    getTypeChecker(): TypeChecker;
+    // /** @internal */ getProgramDiagnostics(sourceFile: SourceFile, cancellationToken?: CancellationToken): readonly Diagnostic[];    
+    getConfigDefines(): ReadonlyMap<string, string>;
 
     // /** @internal */ getCommonSourceDirectory(): string;
 
@@ -5102,7 +5180,7 @@ export interface Program extends ScriptReferenceHost {
     getSymbolCount(): number;
     getTypeCount(): number;
     getInstantiationCount(): number;
-    // getRelationCacheSizes(): { assignable: number; identity: number; subtype: number; strictSubtype: number; };
+    getRelationCacheSizes(): { assignable: number; identity: number; subtype: number; strictSubtype: number; };    
 
     /** @internal */ getFileProcessingDiagnostics(): FilePreprocessingDiagnostics[] | undefined;
     // /** @internal */ getAutomaticTypeDirectiveNames(): string[];
@@ -5310,7 +5388,8 @@ export interface CompilerHost extends ModuleResolutionHost {
     hasInvalidatedLibResolutions?(libFileName: string): boolean;
     getEnvironmentVariable?(name: string): string | undefined;
     /** @internal */ onReleaseOldSourceFile?(oldSourceFile: SourceFile, oldOptions: CompilerOptions, hasSourceFileByPath: boolean, newSourceFileByResolvedPath: SourceFile | undefined): void;
-    /** @internal */ onReleaseParsedCommandLine?(configFileName: string, oldResolvedRef: ResolvedProjectReference | undefined, optionOptions: CompilerOptions): void;
+    /** @internal */ onReleaseParsedCommandLine?(configFileName: string, oldResolvedRef: ResolvedProjectReference | undefined, optionOptions: CompilerOptions): void;    
+    /** @internal */ onAllFilesNeedReparse?(fileNames: string[]): void;
     /** If provided along with custom resolveModuleNames or resolveTypeReferenceDirectives, used to determine if unchanged file path needs to re-resolve modules/type reference directives */
     hasInvalidatedResolutions?(filePath: Path): boolean;
     ///** @internal */ hasChangedAutomaticTypeDirectiveNames?: HasChangedAutomaticTypeDirectiveNames;
@@ -5326,7 +5405,8 @@ export interface CompilerHost extends ModuleResolutionHost {
     /** @internal */ storeSignatureInfo?: boolean;
     /** @internal */ getBuildInfo?(fileName: string, configFilePath: string | undefined): BuildInfo | undefined;
 
-    jsDocParsingMode?: JSDocParsingMode;
+    jsDocParsingMode?: JSDocParsingMode;    
+    /** @internal */ getParseableFiles(): Set<Path>;
 }
 
 /** @internal */
@@ -7182,15 +7262,15 @@ export interface IncludeDirective extends PreprocessorDirective, SourceFileBase 
 }
 
 
-export interface DefineDirective extends PreprocessorDirective {
+export interface DefineDirective extends PreprocessorDirective, Declaration {
     kind: SyntaxKind.DefineDirective;
     
     name: Identifier;    
     arguments?: NodeArray<ParameterDeclaration>;
-    range: TextRange;    
+    range: TextRange;
 }
 
-export interface MacroParameter extends ReadonlyTextRange, IncludedFileRange {
+export interface MacroParameter extends ReadonlyTextRange, MacroIncludedFileRange {
     disabled?: boolean;
     /** get the sourcetext that contains the arg value range */
     text: string;
@@ -7206,9 +7286,10 @@ export interface PositionState {
 }
 
 
-export interface Macro extends IncludedFileRange {
-    // directive: DefineDirective;
+export interface Macro extends MacroIncludedFileRange {
+    directive: DefineDirective;
     name: string;
+    isBuiltIn: boolean;
     includeDirPos?: number;
     includeDirEnd?: number;
     includeFilename?: string;    
@@ -7219,7 +7300,7 @@ export interface Macro extends IncludedFileRange {
     arguments?: NodeArray<ParameterDeclaration>;
     argsIn?: MapLike<MacroParameter>;    
     pos?: PositionState
-    end?: number;
+    end?: number;    
 }
 
 export interface UndefDirective extends PreprocessorDirective {
@@ -7660,6 +7741,10 @@ export const commentPragmas = {
         args: [{ name: "name" }],
         kind: PragmaKindFlags.SingleLine,
     },
+    "this_object": {
+        args: [{ name: "name" }],
+        kind: PragmaKindFlags.SingleLine,
+    },
     "lpc-check": {
         kind: PragmaKindFlags.SingleLine,
     },
@@ -7765,6 +7850,11 @@ export interface ConditionalType extends InstantiableType {
     combinedMapper?: TypeMapper;
 }
 
+export interface MappingTypeNode extends TypeNode {
+    readonly kind: SyntaxKind.MappingType;
+    readonly keyType: TypeNode;
+    readonly elements: NodeArray<TypeNode>;   
+}
 export interface TupleTypeNode extends TypeNode {
     readonly kind: SyntaxKind.TupleType;
     readonly elements: NodeArray<TypeNode | NamedTupleMember>;
@@ -7801,3 +7891,29 @@ export type JSDocTypeReferencingNode =
     | JSDocOptionalType
     | JSDocNullableType
     | JSDocNonNullableType;
+
+/** Return code used by getEmitOutput function to indicate status of the function */
+export enum ExitStatus {
+    // Compiler ran successfully.  Either this was a simple do-nothing compilation (for example,
+    // when -version or -help was provided, or this was a normal compilation, no diagnostics
+    // were produced, and all outputs were generated successfully.
+    Success = 0,
+
+    // Diagnostics were produced and because of them no code was generated.
+    DiagnosticsPresent_OutputsSkipped = 1,
+
+    // Diagnostics were produced and outputs were generated in spite of them.
+    DiagnosticsPresent_OutputsGenerated = 2,
+
+    // When build skipped because passed in project is invalid
+    InvalidProject_OutputsSkipped = 3,
+
+    // When build is skipped because project references form cycle
+    ProjectReferenceCycle_OutputsSkipped = 4,
+}
+
+/** @internal */
+export interface CommentDirectivesMap {
+    getUnusedExpectations(): CommentDirective[];
+    markUsed(matchedLine: number): boolean;
+}

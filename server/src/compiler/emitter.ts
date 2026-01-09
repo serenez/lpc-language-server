@@ -1,5 +1,5 @@
 import * as lpc from "./_namespaces/lpc.js";
-import { Symbol, Bundle, createTextWriter, Debug, EmitFlags, EmitHint, EmitTextWriter, Expression, factory, getEmitFlags, getInternalEmitFlags, getLineStarts, getNewLineCharacter, getShebang, Identifier, InternalEmitFlags, isExpression, isIdentifier, isSourceFile, isStringLiteral, ListFormat, memoize, ModuleKind, Node, NodeArray, noEmitNotification, noEmitSubstitution, performance, Printer, PrinterOptions, PrintHandlers, rangeIsOnSingleLine, SourceFile, SourceMapGenerator, SourceMapSource, SyntaxKind, TextRange, TypeNode, tokenToString, ParenthesizedExpression, nodeIsSynthesized, getStartsOnNewLine, getLinesBetweenRangeEndAndRangeStart, rangeEndIsOnSameLineAsRangeStart, guessIndentation, cast, getIdentifierTypeArguments, LiteralExpression, isMemberName, getSourceFileOfNode, idText, getOriginalNode, isLiteralExpression, getSourceTextOfNodeFromSourceFile, TypeLiteralNode, forEach, NamedDeclaration, DeclarationName, isGeneratedIdentifier, isBindingPattern, GeneratedIdentifier, GeneratedIdentifierFlags, getNodeId, GeneratedNamePart, FunctionDeclaration, isFileLevelUniqueName, BindingPattern, Block, CaseBlock, CaseOrDefaultClause, CatchStatement, ForStatement, IfStatement, isPrivateIdentifier, SwitchStatement, VariableDeclarationList, VariableStatement, WhileStatement, ForEachStatement, DoWhileStatement, formatGeneratedNamePart, formatGeneratedName, lastOrUndefined, getNodeForGeneratedName, isKeyword, isTokenKind, getNormalizedAbsolutePath, GetCanonicalFileName, CompilerOptions, getDirectoryPath, directorySeparator, computeCommonSourceDirectoryOfFilenames, CharacterCodes, ArrayTypeNode, every, ModifierLike, isModifier, Modifier, positionIsSynthesized, VariableDeclaration, getParseTreeNode, skipTrivia, positionsAreOnSameLine, FunctionTypeNode, SignatureDeclaration, ArrowFunction, ParameterDeclaration, singleOrUndefined, isArrowFunction, some, getCommentRange, rangeStartPositionsAreOnSameLine, getContainingNodeArray, rangeEndPositionsAreOnSameLine, getLinesBetweenPositionAndNextNonWhitespaceCharacter, CallSignatureDeclaration, getTrailingSemicolonDeferringWriter, ReturnStatement, isPartiallyEmittedExpression, isParenthesizedExpression, getLeadingCommentRanges, CommentRange, getSyntheticLeadingComments, getTrailingCommentRanges, setOriginalNode, setTextRange, fileExtensionIs, Extension, FunctionExpression, FunctionLikeDeclaration, firstOrUndefined, Statement, isPrologueDirective, hasRecordedExternalHelpers, getEmitHelpers, stableSort, compareEmitHelpers, emitDetachedComments, isJSDocLikeText, isPinnedComment, writeCommentRange, getLineAndCharacterOfPosition, emitNewLineBeforeLeadingCommentOfPosition, BinaryExpression, ArrayLiteralExpression, isBinaryExpression, BinaryOperatorToken, createBinaryExpressionTrampoline, LiteralLikeNode, StringLiteral, escapeString, escapeNonAsciiString, GetLiteralTextFlags, ScriptTarget, getLiteralText, CallExpression, ContinueStatement, BreakStatement, CaseClause, DefaultClause, ElementAccessExpression, ExpressionStatement, isJsonSourceFile, isAssignmentOperator, LiteralTypeNode, PropertyAccessExpression, setTextRangePosEnd, DotToken, UnionTypeNode, isBlock, isEmptyStatement, IndexedAccessTypeNode, BlockLike, RangeExpression, PrefixUnaryExpression, TypeReferenceNode } from "./_namespaces/lpc.js";
+import { Symbol, Bundle, createTextWriter, Debug, EmitFlags, EmitHint, EmitTextWriter, Expression, factory, getEmitFlags, getInternalEmitFlags, getLineStarts, getNewLineCharacter, getShebang, Identifier, InternalEmitFlags, isExpression, isIdentifier, isSourceFile, isStringLiteral, ListFormat, memoize, ModuleKind, Node, NodeArray, noEmitNotification, noEmitSubstitution, performance, Printer, PrinterOptions, PrintHandlers, rangeIsOnSingleLine, SourceFile, SourceMapGenerator, SourceMapSource, SyntaxKind, TextRange, TypeNode, tokenToString, ParenthesizedExpression, nodeIsSynthesized, getStartsOnNewLine, getLinesBetweenRangeEndAndRangeStart, rangeEndIsOnSameLineAsRangeStart, guessIndentation, cast, getIdentifierTypeArguments, LiteralExpression, isMemberName, getSourceFileOfNode, idText, getOriginalNode, isLiteralExpression, getSourceTextOfNodeFromSourceFile, TypeLiteralNode, forEach, NamedDeclaration, DeclarationName, isGeneratedIdentifier, isBindingPattern, GeneratedIdentifier, GeneratedIdentifierFlags, getNodeId, GeneratedNamePart, FunctionDeclaration, isFileLevelUniqueName, BindingPattern, Block, CaseBlock, CaseOrDefaultClause, CatchStatement, ForStatement, IfStatement, isPrivateIdentifier, SwitchStatement, VariableDeclarationList, VariableStatement, WhileStatement, ForEachStatement, DoWhileStatement, formatGeneratedNamePart, formatGeneratedName, lastOrUndefined, getNodeForGeneratedName, isKeyword, isTokenKind, getNormalizedAbsolutePath, GetCanonicalFileName, CompilerOptions, getDirectoryPath, directorySeparator, computeCommonSourceDirectoryOfFilenames, CharacterCodes, ArrayTypeNode, every, ModifierLike, isModifier, Modifier, positionIsSynthesized, VariableDeclaration, getParseTreeNode, skipTrivia, positionsAreOnSameLine, FunctionTypeNode, SignatureDeclaration, ArrowFunction, ParameterDeclaration, singleOrUndefined, isArrowFunction, some, getCommentRange, rangeStartPositionsAreOnSameLine, getContainingNodeArray, rangeEndPositionsAreOnSameLine, getLinesBetweenPositionAndNextNonWhitespaceCharacter, CallSignatureDeclaration, getTrailingSemicolonDeferringWriter, ReturnStatement, isPartiallyEmittedExpression, isParenthesizedExpression, getLeadingCommentRanges, CommentRange, getSyntheticLeadingComments, getTrailingCommentRanges, setOriginalNode, setTextRange, fileExtensionIs, Extension, FunctionExpression, FunctionLikeDeclaration, firstOrUndefined, Statement, isPrologueDirective, hasRecordedExternalHelpers, getEmitHelpers, stableSort, compareEmitHelpers, emitDetachedComments, isJSDocLikeText, isPinnedComment, writeCommentRange, getLineAndCharacterOfPosition, emitNewLineBeforeLeadingCommentOfPosition, BinaryExpression, ArrayLiteralExpression, isBinaryExpression, BinaryOperatorToken, createBinaryExpressionTrampoline, LiteralLikeNode, StringLiteral, escapeString, escapeNonAsciiString, GetLiteralTextFlags, ScriptTarget, getLiteralText, CallExpression, ContinueStatement, BreakStatement, CaseClause, DefaultClause, ElementAccessExpression, ExpressionStatement, isJsonSourceFile, isAssignmentOperator, LiteralTypeNode, PropertyAccessExpression, setTextRangePosEnd, DotToken, UnionTypeNode, isBlock, isEmptyStatement, IndexedAccessTypeNode, BlockLike, RangeExpression, PrefixUnaryExpression, TypeReferenceNode, StructTypeNode, NamedObjectTypeNode, getStringLiteralsTextRecursively, QualifiedName, EntityName, PropertySignature } from "./_namespaces/lpc.js";
 
 const brackets = createBracketsMap();
 
@@ -1056,9 +1056,7 @@ export function createPrinter(printerOptions: PrinterOptions = {}, handlers: Pri
                 case SyntaxKind.Identifier:
                     return emitIdentifier(node as Identifier);
                 case SyntaxKind.TypeLiteral:
-                    return emitTypeLiteral(node as TypeLiteralNode);
-                case SyntaxKind.ArrayType:
-                    return emitArrayType(node as ArrayTypeNode);
+                    return emitTypeLiteral(node as TypeLiteralNode);                
                 case SyntaxKind.VariableStatement:
                     return emitVariableStatement(node as VariableStatement);
                 case SyntaxKind.Parameter:
@@ -1066,6 +1064,15 @@ export function createPrinter(printerOptions: PrinterOptions = {}, handlers: Pri
                 case SyntaxKind.FunctionType:
                     return emitFunctionType(node as lpc.FunctionTypeNode);
                          
+                // Parse tree nodes
+                // Names
+                case SyntaxKind.QualifiedName:
+                    return emitQualifiedName(node as QualifiedName);
+
+                // Type members
+                case SyntaxKind.PropertySignature:
+                    return emitPropertySignature(node as PropertySignature);
+
                 // Declarations
                 case SyntaxKind.FunctionDeclaration:
                     return emitFunctionDeclaration(node as FunctionDeclaration);
@@ -1089,6 +1096,10 @@ export function createPrinter(printerOptions: PrinterOptions = {}, handlers: Pri
                     return emitUnionType(node as UnionTypeNode);
                 case SyntaxKind.TypeReference:
                     return emitTypeReference(node as TypeReferenceNode);
+                case SyntaxKind.StructType:
+                    return emitStructType(node as StructTypeNode);
+                case SyntaxKind.NamedObjectType:
+                    return emitNamedObjectType(node as NamedObjectTypeNode);
                 
                 // Statements
                 case SyntaxKind.SwitchStatement:
@@ -1143,6 +1154,8 @@ export function createPrinter(printerOptions: PrinterOptions = {}, handlers: Pri
                     return emitElementAccessExpression(node as ElementAccessExpression);
                 case SyntaxKind.PropertyAccessExpression:
                     return emitPropertyAccessExpression(node as PropertyAccessExpression);
+                case SyntaxKind.ParenthesizedExpression:
+                    return emitParenthesizedExpression(node as ParenthesizedExpression);
             }
         }
         if (isKeyword(node.kind)) return writeTokenNode(node, writeKeyword);
@@ -1376,6 +1389,21 @@ export function createPrinter(printerOptions: PrinterOptions = {}, handlers: Pri
         }
         if (value2) {
             decreaseIndent();
+        }
+    }
+
+    function writeLineSeparatorsAndIndentBefore(node: Node, parent: Node): boolean {
+        const leadingNewlines = preserveSourceNewlines && getLeadingLineTerminatorCount(parent, node, ListFormat.None);
+        if (leadingNewlines) {
+            writeLinesAndIndent(leadingNewlines, /*writeSpaceIfNotIndenting*/ false);
+        }
+        return !!leadingNewlines;
+    }
+
+    function writeLineSeparatorsAfter(node: Node, parent: Node) {
+        const trailingNewlines = preserveSourceNewlines && getClosingLineTerminatorCount(parent, node, ListFormat.None, /*childrenTextRange*/ undefined);
+        if (trailingNewlines) {
+            writeLine(trailingNewlines);
         }
     }
 
@@ -1999,9 +2027,16 @@ export function createPrinter(printerOptions: PrinterOptions = {}, handlers: Pri
     function emitParameter(node: ParameterDeclaration) {
         emitDecoratorsAndModifiers(node, node.modifiers, /*allowDecorators*/ true);
         emitTypeAnnotation(node.type);
+        if (node.ampToken) {
+             emit(node.ampToken);
+             if (node.ampToken.kind === SyntaxKind.RefKeyword) writeSpace();
+        }
         emitNodeWithWriter(node.name, writeParameter);
         emit(node.dotDotDotToken);
         
+        // TODO - optional and default params
+
+
         // The comment position has to fallback to any present node within the parameterdeclaration because as it turns out, the parser can make parameter declarations with _just_ an initializer.
         emitInitializer(
             node.initializer, 
@@ -2009,6 +2044,21 @@ export function createPrinter(printerOptions: PrinterOptions = {}, handlers: Pri
             node, 
             parenthesizer.parenthesizeExpressionForDisallowedComma
         );
+    }
+
+    function emitQualifiedName(node: QualifiedName) {
+        emitEntityName(node.left);
+        writePunctuation(".");
+        emit(node.right);
+    }
+    
+    function emitEntityName(node: EntityName) {
+        if (node.kind === SyntaxKind.Identifier) {
+            emitExpression(node);
+        }
+        else {
+            emit(node);
+        }
     }
 
     function emitFunctionType(node: FunctionTypeNode) {
@@ -2026,6 +2076,19 @@ export function createPrinter(printerOptions: PrinterOptions = {}, handlers: Pri
     function emitArrayType(node: ArrayTypeNode) {
         emit(node.elementType, parenthesizer.parenthesizeNonArrayTypeOfPostfixType);
         writePunctuation("*");        
+    }
+
+    // 
+    // Type members
+    //
+
+    function emitPropertySignature(node: PropertySignature) {
+        emitModifierList(node, node.modifiers);
+        emitTypeAnnotation(node.type);
+        emitNodeWithWriter(node.name, writeProperty);
+        // emit(node.questionToken);
+        
+        writeTrailingSemicolon();
     }
 
     //
@@ -2448,6 +2511,15 @@ export function createPrinter(printerOptions: PrinterOptions = {}, handlers: Pri
         emitTokenWithComment(SyntaxKind.CloseBracketToken, node.argumentExpression.end, writePunctuation, node);
     }
     
+    function emitParenthesizedExpression(node: ParenthesizedExpression) {
+        const openParenPos = emitTokenWithComment(SyntaxKind.OpenParenToken, node.pos, writePunctuation, node);
+        const indented = writeLineSeparatorsAndIndentBefore(node.expression, node);
+        emitExpression(node.expression, /*parenthesizerRule*/ undefined);
+        writeLineSeparatorsAfter(node.expression, node);
+        decreaseIndentIf(indented);
+        emitTokenWithComment(SyntaxKind.CloseParenToken, node.expression ? node.expression.end : openParenPos, writePunctuation, node);
+    }
+
     function emitPropertyAccessExpression(node: PropertyAccessExpression) {
         emitExpression(node.expression, parenthesizer.parenthesizeLeftSideOfAccess);
         const token = /*node.questionDotToken ||*/ setTextRangePosEnd(factory.createToken(SyntaxKind.MinusGreaterThanToken) as lpc.MinusGreaterThanToken, node.expression.end, node.name.pos);
@@ -2520,11 +2592,23 @@ export function createPrinter(printerOptions: PrinterOptions = {}, handlers: Pri
         emitList(parentNode, typeArguments, ListFormat.TypeArguments, typeArgumentParenthesizerRuleSelector);
     }
     
+    function emitNamedObjectType(node: NamedObjectTypeNode) {
+        writeKeyword("object");
+        writeSpace();                
+        writeStringLiteral(`"${getStringLiteralsTextRecursively(node.name).join("")}"`);
+    }
+
     function emitTypeReference(node: TypeReferenceNode) {
         emit(node.typeName);
         emitTypeArguments(node, node.typeArguments);
     }
     
+    function emitStructType(node: StructTypeNode) {
+        emitTokenWithComment(node.keyword, node.pos, writeKeyword, node);
+        writeSpace();
+        emit(node.typeName);        
+    }
+
     function emitLiteralType(node: LiteralTypeNode) {
         emitExpression(node.literal);
     }
@@ -3805,7 +3889,7 @@ export function createJsPrinter(printerOptions: PrinterOptions = {}, handlers: P
                     return emitParameter(node as ParameterDeclaration);
                 case SyntaxKind.FunctionType:
                     return emitFunctionType(node as lpc.FunctionTypeNode);
-                         
+                                     
                 // Declarations
                 case SyntaxKind.FunctionDeclaration:
                     return emitFunctionDeclaration(node as FunctionDeclaration);
@@ -4193,7 +4277,7 @@ export function createJsPrinter(printerOptions: PrinterOptions = {}, handlers: P
         writeText(getTextOfNode(node, /*includeTrivia*/ false), node.symbol);
         emitList(node, getIdentifierTypeArguments(node), ListFormat.TypeParameters); // Call emitList directly since it could be an array of TypeParameterDeclarations _or_ type arguments
     }
-
+    
     /**
      * Push a new name generation scope.
      */

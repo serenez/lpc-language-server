@@ -452,6 +452,7 @@ export function createDocumentRegistryInternal(
                         getCurrentDirectory: host.getCurrentDirectory,
                         getIncludeDirs: () => compilationSettings?.libIncludeDirs ?? emptyArray,
                         fileExists: host.fileExists,
+                        getCompilerOptions: () => compilationSettings,
                       })
                   };
         sourceFileOptions.languageVersion = scriptTarget;
@@ -551,7 +552,8 @@ export function createDocumentRegistryInternal(
                     scriptSnapshot.getChangeRange(
                         entry.sourceFile.scriptSnapshot
                     ),
-                    languageVariant
+                    languageVariant,
+                    sourceFileOptions.reportParsedDefines
                 );
                 if (externalCache) {
                     externalCache.setDocument(

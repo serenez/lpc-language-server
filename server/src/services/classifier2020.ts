@@ -15,7 +15,9 @@ import {
     isCallExpression,
     isFunctionDeclaration,
     isIdentifier,    
+    isInExternalFileContext,    
     isInfinityOrNaNString,    
+    isInIncludeContext,    
     isPropertyAccessExpression,
     isQualifiedName,
     isSourceFile,
@@ -23,7 +25,6 @@ import {
     ModifierFlags,
     NamedDeclaration,
     Node,
-    NodeFlags,
     ParameterDeclaration,
     Program,
     SemanticMeaning,
@@ -121,14 +122,16 @@ function getSemanticTokens(program: Program, sourceFile: SourceFile, span: TextS
 }
 
 function collectTokens(program: Program, sourceFile: SourceFile, span: TextSpan, collector: (node: Node, tokenType: number, tokenModifier: number) => void, cancellationToken: CancellationToken) {
-    const typeChecker = program.getTypeChecker();
-
-    let disabledSpans = sourceFile.inactiveCodeRanges;
-    let lastDisabledSpan = 0;
-    const checkDisabled = sourceFile.inactiveCodeRanges.length > 0;
+    const typeChecker = program.getTypeChecker();    
     
+    // run the type checker with a currentFile assigned
+    // to avoid constant lookups up the node tree
+    typeChecker.runWithCurrentFile(sourceFile, () => {
+        visit(sourceFile);
+    });
+
     function isFromFile(node: Node) {
-        return isSourceFile(node) || node.originFilename === sourceFile.fileName;
+        return isSourceFile(node) || !isInExternalFileContext(node);
     }
 
     function visit(node: Node) {
@@ -141,7 +144,7 @@ function collectTokens(program: Program, sourceFile: SourceFile, span: TextSpan,
                 cancellationToken.throwIfCancellationRequested();
         }
 
-        if (!node || !isFromFile(node) || !textSpanIntersectsWith(span, node.pos, node.getFullWidth()) || node.getFullWidth() === 0) {
+        if (!node || isInIncludeContext(node) || !textSpanIntersectsWith(span, node.pos, node.getFullWidth()) || node.getFullWidth() === 0) {
             return;
         }                
 
@@ -204,13 +207,15 @@ function collectTokens(program: Program, sourceFile: SourceFile, span: TextSpan,
                         modifierSet |= 1 << TokenModifier.defaultLibrary;
                     }
 
-                    collector(node, typeIdx, modifierSet);
+                    if (isFromFile(node)) {
+                        collector(node, typeIdx, modifierSet);
+                    }
                 }
             }
         }
+        
         forEachChild(node, visit);        
-    }
-    visit(sourceFile);
+    }    
 }
 
 function classifySymbol(symbol: Symbol, meaning: SemanticMeaning): TokenType | undefined {

@@ -1,5 +1,5 @@
 import * as lpc from "./_namespaces/lpc.js";
-import { addRange, append, arrayFrom, CachedDirectoryStructureHost, clearMap, closeFileWatcher, combinePaths, CompilerHost, CompilerOptions, createLanguageService, createLpcFileHandler, createResolutionCache, Debug, Diagnostic, DirectoryStructureHost, DirectoryWatcherCallback, DocumentRegistry, explainFiles, ExportInfoMap, FileWatcher, FileWatcherCallback, FileWatcherEventKind, filter, flatMap, forEach, forEachKey, GetCanonicalFileName, getDefaultLibFileName, getDirectoryPath, getNormalizedAbsolutePath, getOrUpdate, HasInvalidatedLibResolutions, HasInvalidatedResolutions, IScriptSnapshot, isExternalModuleNameRelative, isString, JSDocParsingMode, LanguageService, LanguageServiceHost, LanguageServiceMode, maybeBind, ModuleResolutionHost, noopFileWatcher, normalizePath, ParsedCommandLine, parsePackageName, Path, PerformanceEvent, PollingInterval, Program, ProgramUpdateLevel, ProjectReference, ResolutionCache, resolutionExtensionIsTSOrJson, ResolvedModuleWithFailedLookupLocations, ResolvedProjectReference, returnFalse, returnTrue, sortAndDeduplicate, SortedReadonlyArray, SourceFile, SourceMapper, StringLiteralLike, StructureIsReused, ThrottledCancellationToken, timestamp, toPath, tracing, TypeAcquisition, updateErrorForNoInputFiles, updateMissingFilePathsWatch, WatchDirectoryFlags, WatchOptions, WatchType } from "./_namespaces/lpc.js";
+import { addRange, append, arrayFrom, CachedDirectoryStructureHost, clearMap, closeFileWatcher, CompilerHost, CompilerOptions, createCacheableExportInfoMap, createLanguageService, createLpcFileHandler, createResolutionCache, Debug, Diagnostic, DirectoryStructureHost, DirectoryWatcherCallback, DocumentRegistry, explainFiles, ExportInfoMap, FileWatcher, FileWatcherCallback, FileWatcherEventKind, filter, flatMap, forEach, forEachKey, GetCanonicalFileName, getDefaultLibFileName, getDefaultLibFolder, getDirectoryPath, getNormalizedAbsolutePath, getOrUpdate, HasInvalidatedLibResolutions, HasInvalidatedResolutions, IScriptSnapshot, isExternalModuleNameRelative, JSDocParsingMode, LanguageService, LanguageServiceHost, LanguageServiceMode, maybeBind, ModuleResolutionCache, ModuleResolutionHost, noopFileWatcher, normalizePath, ParsedCommandLine, parsePackageName, Path, PerformanceEvent, PollingInterval, Program, ProgramUpdateLevel, ProjectReference, ResolutionCache, resolutionExtensionIsTSOrJson, ResolvedModuleWithFailedLookupLocations, ResolvedProjectReference, returnFalse, returnTrue, sortAndDeduplicate, SortedReadonlyArray, SourceFile, SourceMapper, StringLiteralLike, StructureIsReused, ThrottledCancellationToken, timestamp, toPath, tracing, tryGetLocalizedLibPath, TypeAcquisition, updateErrorForNoInputFiles, updateMissingFilePathsWatch, WatchDirectoryFlags, WatchOptions, WatchType } from "./_namespaces/lpc.js";
 import { asNormalizedPath, emptyArray, Errors, HostCancellationToken, LogLevel, NormalizedPath, ProjectService, ScriptInfo, updateProjectIfDirty } from "./_namespaces/lpc.server.js";
 
 
@@ -177,7 +177,8 @@ export abstract class Project implements LanguageServiceHost, ModuleResolutionHo
             getCurrentDirectory: this.getCurrentDirectory,
             fileExists: this.fileExists,
             readFile: this.readFile,
-            getIncludeDirs: (filename) => this.program.getIncludeDirs(filename)
+            getIncludeDirs: (filename) => this.program.getIncludeDirs(filename),
+            getCompilerOptions: () => this.compilerOptions,
         });                
         this.languageService = createLanguageService(this, fileHandler, this.documentRegistry, this.projectService.serverMode);
         if (lastFileExceededProgramSize) {
@@ -193,6 +194,11 @@ export abstract class Project implements LanguageServiceHost, ModuleResolutionHo
     /** @internal */
     resolveModuleNameLiterals(moduleLiterals: readonly StringLiteralLike[], containingFile: string, redirectedReference: ResolvedProjectReference | undefined, options: CompilerOptions, containingSourceFile: SourceFile, reusedNames: readonly StringLiteralLike[] | undefined): readonly ResolvedModuleWithFailedLookupLocations[] {
         return this.resolutionCache.resolveModuleNameLiterals(moduleLiterals, containingFile, redirectedReference, options, containingSourceFile, reusedNames);
+    }
+
+    /** @internal */
+    getModuleResolutionCache(): ModuleResolutionCache | undefined {
+        return this.resolutionCache.getModuleResolutionCache();
     }
     
     disableLanguageService(lastFileExceededProgramSize?: string) {
@@ -218,6 +224,11 @@ export abstract class Project implements LanguageServiceHost, ModuleResolutionHo
     /** @internal */
     fileIsOpen(filePath: Path) {
         return this.projectService.openFiles.has(filePath);
+    }
+
+    /** @internal */
+    getParseableFiles(): Set<lpc.Path> {
+        return this.projectService.shouldParse;
     }
 
     /** @internal */
@@ -318,6 +329,13 @@ export abstract class Project implements LanguageServiceHost, ModuleResolutionHo
         );
     }
     
+    onAllFilesNeedReparse(fileNames: string[]): void {
+        this.writeLog(`Reparse ${fileNames.length} files triggered for project: ${this.getProjectName()}`);
+        fileNames.forEach(fileName => {
+            this.getScriptInfo(fileName)?.incrementVersion();
+        });        
+    }
+
     getScriptFileNames() {
         if (!this.rootFilesMap.size) {
             return lpc.emptyArray;
@@ -390,9 +408,33 @@ export abstract class Project implements LanguageServiceHost, ModuleResolutionHo
         this.markAsDirty();
     }
 
+    
+    /** @internal */
+    getCachedExportInfoMap() {
+        return this.exportMapCache ||= createCacheableExportInfoMap(this);
+    }
+
+    /** @internal */
+    clearCachedExportInfoMap() {
+        this.exportMapCache?.clear();
+    }
+    
     /** @internal */
     clearSourceMapperCache() {
         //this.languageService.clearSourceMapperCache();
+    }
+
+    /** @internal */
+    getPackageJsonAutoImportProvider(): Program | undefined {
+        console.debug("todo - getPackageJsonAutoImportProvider");
+        return undefined;
+    }
+
+    /** @internal */
+    getGlobalTypingsCacheLocation() {
+        console.debug("todo - getGlobalTypingsCacheLocation");
+        return undefined;
+        // return this.getGlobalCache();
     }
 
     getLanguageService(ensureSynchronized = true): LanguageService {
@@ -560,7 +602,9 @@ export abstract class Project implements LanguageServiceHost, ModuleResolutionHo
 
     getDefaultLibFileName() {
         const nodeModuleBinDir = getDirectoryPath(normalizePath(this.projectService.getExecutingFilePath()));
-        return combinePaths(nodeModuleBinDir, getDefaultLibFileName(this.compilerOptions));
+        // todo add localized stuff here
+        return tryGetLocalizedLibPath(this.compilerOptions);
+        // return combinePaths(nodeModuleBinDir, getDefaultLibFolder(this.compilerOptions), getDefaultLibFileName(this.compilerOptions));
     }
 
     useCaseSensitiveFileNames() {
@@ -797,6 +841,8 @@ export abstract class Project implements LanguageServiceHost, ModuleResolutionHo
         return this.getCurrentProgram()?.forEachResolvedProjectReference(cb);
     }
 
+    
+    
     private updateGraphWorker() {
         const oldProgram = this.languageService.getCurrentProgram();
         Debug.assert(oldProgram === this.program);
@@ -1049,8 +1095,8 @@ export abstract class Project implements LanguageServiceHost, ModuleResolutionHo
     private filesToStringWorker(writeProjectFileNames: boolean, writeFileExplaination: boolean, writeFileVersionAndText: boolean) {
         if (this.isInitialLoadPending()) return "\tFiles (0) InitialLoadPending\n";
         if (!this.program) return "\tFiles (0) NoProgram\n";
-        const sourceFiles = this.program.getSourceFiles();
-        let strBuilder = `\tFiles (${sourceFiles.length})\n`;
+        const sourceFiles = this.program.getSourceFiles();        
+        let strBuilder = `\tFiles (${sourceFiles.length} / ${this.rootFilesMap.size})\n`;        
         if (writeProjectFileNames) {
             for (const file of sourceFiles) {
                 strBuilder += `\t${file.fileName}${writeFileVersionAndText ? ` ${file.version} ${JSON.stringify(file.text)}` : ""}\n`;

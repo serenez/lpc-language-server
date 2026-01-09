@@ -49,29 +49,30 @@ describe("Compiler", () => {
 
     testFiles = enumerateFiles(basePath, /\.c$/);
     console.info(`Got ${testFiles.length} test files in ${basePath}`);
-
+   
     const singleTestFile = "";//"typeInference3.c";    
 
     testFiles.filter(f => singleTestFile.length==0 || f.endsWith(singleTestFile)).forEach(testCaseFile => {
         const testCaseName = "compiler/" + lpc.getBaseFileName(testCaseFile);
         describe(testCaseName, () => {                  
             const fileContent = lpc.sys.readFile(testCaseFile);
-            const testOptions = extractCompilerSettings(fileContent);            
+            const testOptions = extractCompilerSettings(fileContent);
 
             // setup options & hosts
             const compilerOptions: lpc.CompilerOptions = {
                 driverType: lpc.driverTypeToLanguageVariant(testOptions["driver"]),
-                diagnostics: true
+                diagnostics: true                                
             };
 
             const expectedErrorCount = +(testOptions["errors"] ?? "0");
+            const extraFiles = (testOptions["files"]?.split(",") ?? lpc.emptyArray).map(f => lpc.combinePaths(lpc.getDirectoryPath(testCaseFile), f.trim()));
 
             const compilerHost = lpc.createCompilerHost(compilerOptions);
-            compilerHost.getDefaultLibFileName = () => lpc.combinePaths(root, lpc.getDefaultLibFileName(compilerOptions));
+            compilerHost.getDefaultLibFileName = () => lpc.combinePaths(root, lpc.getDefaultLibFolder(compilerOptions), lpc.getDefaultLibFileName(compilerOptions));
 
             const createProgramOptions: lpc.CreateProgramOptions = {
                 host: compilerHost,
-                rootNames: [testCaseFile],
+                rootNames: [testCaseFile, ...extraFiles],
                 options: compilerOptions,                
                 oldProgram: undefined,                
             };
@@ -104,5 +105,98 @@ describe("Compiler", () => {
             });                        
         });
     });
+
     
+     describe("Parser Node Positions", () => {
+        it("should correctly set end position for mapping literal elements with macro key and value", () => {
+            const source = `#define KEY 123
+#define VALUE 456
+void test() { mapping m = ([ KEY: VALUE ]); }`;
+            
+            const compilerOptions: lpc.CompilerOptions = {
+                driverType: lpc.LanguageVariant.FluffOS,
+                diagnostics: true
+            };
+
+            const compilerHost = lpc.createCompilerHost(compilerOptions);
+            compilerHost.getDefaultLibFileName = () => lpc.combinePaths(root, lpc.getDefaultLibFolder(compilerOptions), lpc.getDefaultLibFileName(compilerOptions));
+
+            const sourceFile = lpc.createSourceFile("test.c", source, lpc.ScriptTarget.Latest, /*setParentNodes*/ false);
+            
+            // Find the mapping literal expression by traversing the AST
+            let mappingLiteral: lpc.MappingLiteralExpression | undefined;
+            const visitNode = (node: lpc.Node): void => {
+                if (node.kind === lpc.SyntaxKind.MappingLiteralExpression) {
+                    mappingLiteral = node as lpc.MappingLiteralExpression;
+                }
+                lpc.forEachChild(node, visitNode);
+            };
+            visitNode(sourceFile);
+
+            expect(mappingLiteral).toBeDefined();
+            expect(mappingLiteral!.elements).toBeDefined();
+            expect(mappingLiteral!.elements!.length).toBe(1);
+
+            const mappingEntry = mappingLiteral!.elements![0] as lpc.MappingEntryExpression;
+            expect(mappingEntry.kind).toBe(lpc.SyntaxKind.MappingEntryExpression);
+            
+            // The key and value are both macros, so they should expand to their values
+            const elements = mappingEntry.elements;
+            expect(elements).toBeDefined();
+            expect(elements!.length).toBe(1);
+
+            const valueExpr = elements![0];
+            
+            // The end position of the elements array should match the end of the last expression
+            expect(elements!.end).toBe(valueExpr.end);
+            
+            // The end position of the mapping entry should match the end of its elements array
+            expect(mappingEntry.end).toBe(elements!.end);
+            
+            // And thus should also match the last expression
+            expect(mappingEntry.end).toBe(valueExpr.end);
+        });
+
+        it("should correctly set end position for union types with macro constituents", () => {
+            const source = `#define TYPE1 int
+#define TYPE2 string
+void test() { TYPE1 | TYPE2 x; }`;
+            
+            const compilerOptions: lpc.CompilerOptions = {
+                driverType: lpc.LanguageVariant.FluffOS,
+                diagnostics: true
+            };
+
+            const compilerHost = lpc.createCompilerHost(compilerOptions);
+            compilerHost.getDefaultLibFileName = () => lpc.combinePaths(root, lpc.getDefaultLibFolder(compilerOptions), lpc.getDefaultLibFileName(compilerOptions));
+
+            const sourceFile = lpc.createSourceFile("test.c", source, lpc.ScriptTarget.Latest, /*setParentNodes*/ false);
+            
+            // Find the union type by traversing the AST
+            let unionType: lpc.UnionTypeNode | undefined;
+            const visitNode = (node: lpc.Node): void => {
+                if (node.kind === lpc.SyntaxKind.UnionType) {
+                    unionType = node as lpc.UnionTypeNode;
+                }
+                lpc.forEachChild(node, visitNode);
+            };
+            visitNode(sourceFile);
+
+            expect(unionType).toBeDefined();
+            expect(unionType!.types).toBeDefined();
+            expect(unionType!.types.length).toBe(2);
+
+            const firstType = unionType!.types[0];
+            const lastType = unionType!.types[1];
+            
+            // The end position of the types array should match the end of the last type
+            expect(unionType!.types.end).toBe(lastType.end);
+            
+            // The end position of the union type itself should match the end of the last type
+            expect(unionType!.end).toBe(lastType.end);
+            
+            // And thus the union type end should match the types array end
+            expect(unionType!.end).toBe(unionType!.types.end);
+        });
+    });
 });

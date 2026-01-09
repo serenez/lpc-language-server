@@ -1,20 +1,31 @@
-{
+{    
     "compilerOptions": {
+        "rootDir": ".",
+        "outDir": "../out/local",
+        "pretty": true,
+        "sourceRoot": "./src",
+        "rootDirs": ["src"],
+        "baseUrl": "./",
+
+        "lib": ["es2020"],        
         "target": "es2020",
-        "lib": ["es2020"],
         "module": "ESNext",
-        "moduleResolution": "Bundler",
+        "moduleResolution": "Node",
+        
+        "declaration": false,        
         "sourceMap": true,
-        "strict": false,
-        "outDir": "out",
-        "rootDir": "src",
-        "skipLibCheck": true,
-        "declaration": true,
-        "declarationMap": true,
         "composite": false,
-        "strictBindCallApply": false,
-        "noImplicitOverride": false,
-        "declarationDir": "out",
+        "stripInternal": true,
+        
+        "skipLibCheck": true,
+
+        "esModuleInterop": true,
+        "resolveJsonModule": true,
+        "strict": false,
+        "newLine": "lf",
+        "preserveConstEnums": true,
+        
+        "noImplicitOverride": false,      
     },
     "include": ["src"], 
     "exclude": ["node_modules", ".vscode-test", "tests"]

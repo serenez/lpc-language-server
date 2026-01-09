@@ -7,9 +7,11 @@ import {
     contains,
     createPrinterWithRemoveComments,
     Debug,
+    DefineDirective,
     displayPart,    
     find,
     first,    
+    firstOrUndefined,    
     forEach,
     getCombinedLocalAndExportSymbolFlags,
     getDeclarationOfKind,
@@ -19,6 +21,9 @@ import {
     getObjectFlags,
     getParseTreeNode,
     getSourceFileOfNode,    
+    getSourceFileOrIncludeOfNode,    
+    getSourceTextOfNodeFromSourceFile,    
+    getSourceTextOfRangeFromSourceFile,    
     isBindingElement,
     isCallExpression,
     isCallExpressionTarget,
@@ -100,6 +105,7 @@ export function getSymbolKind(
             ? ScriptElementKind.localClassElement
             : ScriptElementKind.classElement;
     }
+    if (flags & SymbolFlags.Define) return ScriptElementKind.define;
     if (flags & SymbolFlags.Enum) return ScriptElementKind.enumElement;
     if (flags & SymbolFlags.TypeAlias) return ScriptElementKind.typeElement;
     if (flags & SymbolFlags.Interface)
@@ -925,6 +931,22 @@ function getSymbolDisplayPartsDocumentationAndSymbolKindWorker(typeChecker: Type
     //     return { displayParts: [keywordPart(SyntaxKind.ThisKeyword)], documentation: [], symbolKind: ScriptElementKind.primitiveType, tags: undefined };
     // }
 
+    if (symbolFlags & SymbolFlags.Define) {
+        const defineNode = symbol.declarations?.[0] as DefineDirective;
+        if (defineNode) {
+            const sourceFile = getSourceFileOrIncludeOfNode(defineNode);
+            const sourceText = getSourceTextOfNodeFromSourceFile(sourceFile, defineNode, false);
+
+            // displayParts.push(punctuationPart(SyntaxKind.HashToken));
+            // displayParts.push(displayPart("define", SymbolDisplayPartKind.keyword));            
+            // displayParts.push(spacePart());
+            // displayParts.push(displayPart(defineNode.name.text, SymbolDisplayPartKind.enumName));            
+            // displayParts.push(spacePart());
+            displayParts.push(textPart(sourceText));
+            tags = symbol.getContextualJsDocTags(defineNode, typeChecker);
+        }    
+    }
+
     // Class at constructor site need to be shown as constructor apart from property,method, vars
     if (symbolKind !== ScriptElementKind.unknown || symbolFlags & SymbolFlags.Class || symbolFlags & SymbolFlags.Alias) {
         // If symbol is accessor, they are allowed only if location is at declaration identifier of the accessor
@@ -1092,17 +1114,17 @@ function getSymbolDisplayPartsDocumentationAndSymbolKindWorker(typeChecker: Type
         addFullSymbolName(symbol);
         writeTypeParametersOfSymbol(symbol, sourceFile);
     }    
-    // if ((symbolFlags & SymbolFlags.TypeAlias) && (semanticMeaning & SemanticMeaning.Type)) {
-    //     prefixNextMeaning();
-    //     displayParts.push(keywordPart(SyntaxKind.TypeKeyword));
-    //     displayParts.push(spacePart());
-    //     addFullSymbolName(symbol);
-    //     writeTypeParametersOfSymbol(symbol, sourceFile);
-    //     displayParts.push(spacePart());
-    //     displayParts.push(operatorPart(SyntaxKind.EqualsToken));
-    //     displayParts.push(spacePart());
-    //     addRange(displayParts, typeToDisplayParts(typeChecker, location.parent && isConstTypeReference(location.parent) ? typeChecker.getTypeAtLocation(location.parent) : typeChecker.getDeclaredTypeOfSymbol(symbol), enclosingDeclaration, TypeFormatFlags.InTypeAlias));
-    // }       
+    if ((symbolFlags & SymbolFlags.TypeAlias) && (semanticMeaning & SemanticMeaning.Type)) {
+        prefixNextMeaning();
+        displayParts.push(keywordPart(SyntaxKind.StructKeyword));
+        displayParts.push(spacePart());
+        addFullSymbolName(symbol);
+        writeTypeParametersOfSymbol(symbol, sourceFile);
+        displayParts.push(spacePart());
+        // displayParts.push(operatorPart(SyntaxKind.EqualsToken));
+        displayParts.push(spacePart());
+        addRange(displayParts, typeToDisplayParts(typeChecker, typeChecker.getDeclaredTypeOfSymbol(symbol), enclosingDeclaration, TypeFormatFlags.InTypeAlias));
+    }       
     // don't use symbolFlags since getAliasedSymbol requires the flag on the symbol itself
     if (symbol.flags & SymbolFlags.Alias) {
         prefixNextMeaning();
@@ -1156,7 +1178,7 @@ function getSymbolDisplayPartsDocumentationAndSymbolKindWorker(typeChecker: Type
                     symbolKind === ScriptElementKind.localVariableElement ||
                     symbolKind === ScriptElementKind.indexSignatureElement ||
                     symbolKind === ScriptElementKind.variableUsingElement ||
-                    symbolKind === ScriptElementKind.variableAwaitUsingElement ||
+                    symbolKind === ScriptElementKind.variableAwaitUsingElement ||                    
                     isThisExpression
                 ) {
                     // displayParts.push(punctuationPart(SyntaxKind.ColonToken));                    
@@ -1173,6 +1195,15 @@ function getSymbolDisplayPartsDocumentationAndSymbolKindWorker(typeChecker: Type
                     addRange(displayParts, typeToDisplayParts(typeChecker, type, enclosingDeclaration));
                     displayParts.push(spacePart());
                     // }                    
+                }
+                else if (symbolKind === ScriptElementKind.functionElement) {
+                    // add the return type for a function
+                    const callSig = firstOrUndefined(type.getCallSignatures());
+                    const callSignReturnType = callSig?.getReturnType();
+                    if (callSignReturnType) {
+                        addRange(displayParts, typeToDisplayParts(typeChecker, callSignReturnType));
+                        displayParts.push(spacePart());
+                    }
                 }
 
                 addFullSymbolName(symbol);
@@ -1359,7 +1390,8 @@ function getSymbolDisplayPartsDocumentationAndSymbolKindWorker(typeChecker: Type
     }
 
     function addSignatureDisplayPartsHelper(signature: Signature, allSignatures: readonly Signature[], flags = TypeFormatFlags.None) {
-        if (allSignatures.length > 1) {
+        // only display overload indicator for efuns        
+        if (allSignatures.length > 1 && signature.declaration && getSourceFileOfNode(signature.declaration)?.isDefaultLib) {
             displayParts.push(spacePart());
             displayParts.push(punctuationPart(SyntaxKind.OpenParenToken));
             displayParts.push(operatorPart(SyntaxKind.PlusToken));

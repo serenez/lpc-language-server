@@ -6,12 +6,27 @@ import { Logger } from "./nodeServer";
 import { Position, TextDocument } from "vscode-languageserver-textdocument";
 import { URI } from "vscode-uri";
 import EventEmitter from "events";
-import { convertNavTree } from "./utils.js";
+import { convertNavTree, getFileResourceConverter } from "./utils.js";
 import * as typeConverters from './typeConverters';
 import { KindModifiers } from "./protocol.const.js";
-import { CompletionEntryDetails, SignatureHelp } from "./typeConverters";
+import { CompletionEntryDetails, Range, SignatureHelp } from "./typeConverters";
+import { getHeapStatistics } from "v8";
+import { addMarkdownDocumentation, documentationToMarkdown, IFilePathToResourceConverter } from "./textRendering.js";
+import { MarkdownString } from "./MarkdownString.js";
 
+// generate a unique 5 digit it
+// const randomId = Math.floor(Math.random() * 90000) + 10000;
+// const logFilename = `lpc-server-${randomId}.log`;
 const logger = new Logger(undefined, true, lpc.server.LogLevel.normal);
+// const origLog = console.log;
+// console.log = (...args) => { logger.info(args.length === 1 ? args[0] : args.join(", ")); origLog(...args); };
+// const origErr = console.error;
+// console.error = (...args) => { logger.err(args.length === 1 ? args[0] : args.join(", ")); origErr(...args); };
+// const origInfo = console.info;
+// console.info = (...args) => { logger.info(args.length === 1 ? args[0] : args.join(", ")); origInfo(...args); };
+// const origDebug = console.debug;
+// console.debug = (...args) => { logger.info(args.length === 1 ? args[0] : args.join(", ")); origDebug(...args); };
+
 const DIAG_DELAY = 0;
 
 // see https://github.com/microsoft/vscode/blob/2e93ebce771522202158ee335d2c36d10ce086ea/extensions/typescript-language-features/src/tsServer/server.ts#L495 
@@ -65,9 +80,18 @@ class LspSession extends lpc.server.Session {
     }
 }
 
+function findArgument(arg: string): string | undefined {
+    return lpc.findArgument(arg, lpc.sys.args); 
+}
+
+function parseLocale(): string | undefined {
+    const locale = findArgument("--locale");
+    return locale;
+}
+
 
 function parseServerMode(): lpc.LanguageServiceMode | undefined {
-    const mode = lpc.server.findArgument("--serverMode");
+    const mode = findArgument("--serverMode");
     if (!mode) return undefined;
 
     switch (mode.toLowerCase()) {
@@ -82,20 +106,29 @@ function parseServerMode(): lpc.LanguageServiceMode | undefined {
     }
 }
 
-export function start(connection: Connection, platform: string) {
+export function start(connection: Connection, platform: string, args: string[]) {    
     const serverMode = parseServerMode() ?? lpc.LanguageServiceMode.Semantic;
+    const logPrefix = serverMode === lpc.LanguageServiceMode.Syntactic ? "Syntactic: " : "";
+    logger.info(`${logPrefix}Starting LPC Server`);
+    // logger.info(`${logPrefix}Version: ${lpc.version}`); // removing for now because I keep forgetting to update this const
+    logger.info(`${logPrefix}Arguments: ${args.join(" ")}`);
+    logger.info(`${logPrefix}Platform: ${platform} NodeVersion: ${process.version} CaseSensitive: ${lpc.sys.useCaseSensitiveFileNames}`);
+    logger.info(`${logPrefix}ServerMode: ${serverMode}`)
+    logger.info(`${logPrefix}PID: ${process.pid}`);
     
-    logger.info(`Starting TS Server`);
-    //logger.info(`Version: ${lpc.version}`);
-    // logger.info(`Arguments: ${args.join(" ")}`);
-    logger.info(`Platform: ${platform} NodeVersion: ${process.version} CaseSensitive: ${lpc.sys.useCaseSensitiveFileNames}`);
-    logger.info(`ServerMode: ${serverMode}`);
+    const locale = parseLocale();    
+    logger.info(`${logPrefix}Locale: ${parseLocale()}`);    
+    if (locale) lpc.validateLocaleAndSetLanguage(locale, lpc.sys);
+    
+    try {
+        logger.info(`${logPrefix}Heap Limit: ${Math.round(getHeapStatistics().heap_size_limit / 1024 / 1024)} MB`);    
+    } catch {}
 
     if (serverMode === lpc.LanguageServiceMode.Syntactic) {
         logger.info("No further log entries will be generated for syntactic server");
         logger.close();
     }
-
+    
     lpc.setStackTraceLimit();    
 
     if (lpc.Debug.isDebugging) {        
@@ -117,15 +150,23 @@ export function start(connection: Connection, platform: string) {
     const canonicalFilename = lpc.createGetCanonicalFileName(lpc.sys.useCaseSensitiveFileNames);
     const documents: TextDocuments<TextDocument> = new TextDocuments(TextDocument);
     let sequence = 0;
-    const cancellationToken = lpc.server.nullCancellationToken;// new ServerCancellationToken(logger);    
 
+    let cancellationToken: lpc.server.ServerCancellationToken;
+    try {
+        const factory = require("../cancellationToken/cancellationToken.js")
+        cancellationToken = factory(lpc.sys.args);
+    } catch (e) {
+        cancellationToken = lpc.server.nullCancellationToken;
+    }
+    
+    
     function fromUri(uri: string): string {        
         return uri.startsWith("file://") ? URI.parse(uri).fsPath : uri;
     }
 
     connection.onInitialize((params) => {                
         const capabilities = params.capabilities;
-        const rootFolder = lpc.normalizePath(fromUri(params.workspaceFolders[0].uri));
+        const rootFolder = params.workspaceFolders ? lpc.normalizePath(fromUri(params.workspaceFolders[0].uri)) : "";
         // const projectFileName = lpc.normalizePath(lpc.combinePaths(rootFolder, "lpc-config.json"));
 
         // const config = loadLpcConfig(projectFileName);
@@ -134,7 +175,7 @@ export function start(connection: Connection, platform: string) {
         host.setTimeout = setTimeout;
         host.clearTimeout = clearTimeout;
         host.setImmediate = setImmediate;
-        host.clearImmediate = clearImmediate;            
+        host.clearImmediate = clearImmediate;       
         
         const session = new LspSession({
             host: lpc.sys as lpc.server.ServerHost,
@@ -149,9 +190,11 @@ export function start(connection: Connection, platform: string) {
             serverMode
         });                              
         
-        // send blank options for now
-        // TODO: the extension should send these
-        session.setCompilerOptionsForInferredProjects({options:{}});
+        const inferredOptions: protocol.InferredProjectCompilerOptions = {};        
+        const driverTypeArg = findArgument("--driverType");
+        inferredOptions.driverType = driverTypeArg === "fluffos" ? lpc.LanguageVariant.FluffOS : lpc.LanguageVariant.LDMud;        
+
+        session.setCompilerOptionsForInferredProjects({options:inferredOptions});
 
         session.onOutput.on("message", (msg: lpc.server.protocol.Message) => {
             if (msg.type === "event") {
@@ -169,7 +212,7 @@ export function start(connection: Connection, platform: string) {
                             // convert typescript server diagnostics to language server diagnostics
                             const lsDiags = diagnostics.map(d => typeConverters.Diagnostic.fromDiagnostic(d));
 
-                            if (doc && lsDiags) {
+                            if (doc && lsDiags) {                                
                                 connection.sendDiagnostics({ uri, diagnostics: lsDiags });
                             }
                         }
@@ -226,6 +269,17 @@ export function start(connection: Connection, platform: string) {
             const filename = fromUri(e.document.uri);
             executeRequest<protocol.Request>(protocol.CommandTypes.Close, {file: filename});            
         });
+
+        connection.onDidChangeWatchedFiles(e => {            
+            if (e.changes.length > 0 && serverMode !== lpc.LanguageServiceMode.Syntactic) {                    
+                const allDocs = documents.all().map(d => fromUri(d.uri));
+                const docSet = new Set(allDocs);                
+                const getErrDocs = Array.from(docSet);
+                // add a slight delay to let the config update
+                // delay longer than ensure project delay in editorService
+                executeRequest<protocol.GeterrRequest>(protocol.CommandTypes.Geterr, {delay: 2550, files: getErrDocs});
+            }
+        });
                 
         connection.onDidChangeTextDocument((e: vscode.DidChangeTextDocumentParams) => {
             try {                
@@ -263,11 +317,15 @@ export function start(connection: Connection, platform: string) {
                         endLine,
                         endOffset,
                         insertString: lspChange.text,
-                     });
+                    });
                 }
                 
-                if (serverMode !== lpc.LanguageServiceMode.Syntactic) {
-                    executeRequest<protocol.GeterrRequest>(protocol.CommandTypes.Geterr, {delay: DIAG_DELAY, files: [filename]});
+                if (serverMode !== lpc.LanguageServiceMode.Syntactic) {                    
+                    const allDocs = documents.all().map(d => fromUri(d.uri));
+                    const docSet = new Set(allDocs);
+                    docSet.add(filename);
+                    const getErrDocs = Array.from(docSet);
+                    executeRequest<protocol.GeterrRequest>(protocol.CommandTypes.Geterr, {delay: DIAG_DELAY, files: getErrDocs});
                 }
             } catch(ex) {
                 console.error(ex);
@@ -315,7 +373,7 @@ export function start(connection: Connection, platform: string) {
                     // if (!options.includeDeclaration && ref.isDefinition) {
                     //     continue;
                     // }                
-                    const location = typeConverters.Location.fromTextSpan(URI.parse(ref.file), ref);
+                    const location = typeConverters.Location.fromTextSpan(URI.file(ref.file), ref);
                     result.push(location);
                 }                
             } catch(e) {                
@@ -340,7 +398,7 @@ export function start(connection: Connection, platform: string) {
             const renameInfo = result.info;
             if (!renameInfo.canRename) {
                 return undefined;
-            } 
+            }             
             return typeConverters.Range.fromTextSpan(renameInfo.triggerSpan);             
         });
 
@@ -364,7 +422,7 @@ export function start(connection: Connection, platform: string) {
 
             if (renameInfo.fileToRename) {
                 lpc.Debug.fail("todo - file rename");
-            }
+            }            
 
             return typeConverters.WorkspaceEdit.fromRenames(result.locs, requestParams.newName);
         });
@@ -409,22 +467,20 @@ export function start(connection: Connection, platform: string) {
                 ...posParamToLpcPos(requestParams),
             };
             
-            const result = executeRequest<protocol.QuickInfoRequest, lpc.QuickInfo>(protocol.CommandTypes.Quickinfo, args);
+            const result = executeRequest<protocol.QuickInfoRequest, lpc.server.protocol.QuickInfoResponseBody>(protocol.CommandTypes.Quickinfo, args);
             if (!result) return undefined;
 
-            try {                
-                const displayParts: string[] = result?.displayParts?.map(pt=>pt.text) ?? [];
-                let md = "```lpc\n" + displayParts.join("") + "\n```";
-                
-                const docMd = typeConverters.DisplayPart.documentationToMarkdown(result.documentation, result.tags, undefined);
-                md += "\n" + docMd;
-                
+            try {     
+                const contents = new MarkdownString();
+                const { displayString, documentation, tags } = result;
+                if (displayString) {
+                    contents.appendCodeblock('lpc', displayString);
+                }
+                addMarkdownDocumentation(contents, documentation, tags, getFileResourceConverter());
                 return {
-                    contents: {
-                        kind: MarkupKind.Markdown,                    
-                        value: md,
-                    }
-                } satisfies Hover;
+                    contents: contents.toMarkupContent(),
+                    range: Range.fromTextSpan(result),
+                };                
             }
             catch(e) {                
                 console.error(e);
@@ -478,11 +534,11 @@ export function start(connection: Connection, platform: string) {
             
             try {
                 const result = results?.at(0) as any;             
-                if (!result) {
+                if (!result || !result.file) {
                     return [];
                 }
                 const def = vscode.LocationLink.create(
-                    result.file,
+                    URI.file(result.file).toString(),
                     {
                         start: locationToLspPosition(result.start),
                         end: locationToLspPosition(result.end),
@@ -494,8 +550,7 @@ export function start(connection: Connection, platform: string) {
                 )    
                 return [def];
             } catch(e) {
-                console.error(e);
-                debugger;
+                console.error('onDefinition error', e);                
             }
         });
 
@@ -524,7 +579,7 @@ export function start(connection: Connection, platform: string) {
 
                     const item: vscode.CompletionItem = {
                         label: entry.name || (entry.insertText ?? ''),
-                        kind: typeConverters.CompletionKind.fromKind(entry.kind),                    
+                        kind: typeConverters.CompletionKind.fromKind(entry.kind),
                         detail: typeConverters.CompletionKind.getDetails(entry),                                        
                         sortText: entry.sortText,
                         insertText: entry.insertText,
@@ -625,55 +680,4 @@ interface CompletionData {
     uri: string;
     entryName: string;
     position: vscode.Position;
-}
-
-
-
-/**
- * Test server cancellation token used to mock host token cancellation requests.
- * The cancelAfterRequest constructor param specifies how many isCancellationRequested() calls
- * should be made before canceling the token. The id of the request to cancel should be set with
- * setRequestToCancel();
- */
-export class ServerCancellationToken implements lpc.server.ServerCancellationToken {
-    private currentId: number | undefined = -1;
-    private requestToCancel = -1;
-    private isCancellationRequestedCount = 0;
-
-    constructor(private logger: Logger, private cancelAfterRequest = 0) {
-    }
-
-    setRequest(requestId: number) {
-        this.currentId = requestId;
-
-        this.logger.msg(`TestServerCancellationToken:: Cancellation Request id:: ${requestId}`);
-    }
-
-    setRequestToCancel(requestId: number) {
-        this.logger.msg(`TestServerCancellationToken:: Setting request to cancel:: ${requestId}`);
-        this.resetToken();
-        this.requestToCancel = requestId;
-    }
-
-    resetRequest(requestId: number) {
-        this.logger.msg(`TestServerCancellationToken:: resetRequest:: ${requestId} is ${requestId === this.currentId ? "as expected" : `expected to be ${this.currentId}`}`);
-        lpc.Debug.assertEqual(requestId, this.currentId, "unexpected request id in cancellation");
-        this.currentId = undefined;
-    }
-
-    isCancellationRequested() {
-        this.isCancellationRequestedCount++;
-        // If the request id is the request to cancel and isCancellationRequestedCount
-        // has been met then cancel the request. Ex: cancel the request if it is a
-        // nav bar request & isCancellationRequested() has already been called three times.
-        const result = this.requestToCancel === this.currentId && this.isCancellationRequestedCount >= this.cancelAfterRequest;
-        if (result) this.logger.msg(`TestServerCancellationToken:: Cancellation is requested`);
-        return result;
-    }
-
-    resetToken() {
-        this.currentId = -1;
-        this.isCancellationRequestedCount = 0;
-        this.requestToCancel = -1;
-    }
 }

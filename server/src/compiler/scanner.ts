@@ -17,14 +17,11 @@ import {
     JSDocParsingMode,
     JSDocSyntaxKind,
     KeywordSyntaxKind,
-
     LanguageVariant,
     LineAndCharacter,
     MapLike,
-
     positionIsSynthesized,
     PunctuationOrKeywordSyntaxKind,
-
     ScriptKind,
     ScriptTarget,
     SourceFileLike,
@@ -62,7 +59,7 @@ export interface Scanner {
     getTokenValue(): string;
     getStateId(): number;
     getState(id: number): SavedStatePos | undefined;
-    getStateEndings(): MapLike<SavedStatePos>;
+    getStateEndings(): SavedStatePos[];
     releaseState(): void;
     resetSavedStates(): void;
     hasUnicodeEscape(): boolean;
@@ -141,6 +138,10 @@ interface SavedStatePos {
     isSpeculative?: boolean;
 }
 
+function createPosState(end: number, fileName: string, isSpeculative: boolean = false): SavedStatePos {
+    return { fileName, end, isSpeculative };
+}
+
 /** @internal */
 export const textToDirectiveObj: MapLike<DirectiveSyntaxKind> = {
     '#include': SyntaxKind.IncludeDirective,
@@ -169,6 +170,7 @@ export const textToKeywordObj: MapLike<KeywordSyntaxKind> = {
     closure: SyntaxKind.ClosureKeyword,
     continue: SyntaxKind.ContinueKeyword,                
     default: SyntaxKind.DefaultKeyword,
+    deprecated: SyntaxKind.DeprecatedKeyword,
     do: SyntaxKind.DoKeyword,
     else: SyntaxKind.ElseKeyword,            
     false: SyntaxKind.FalseKeyword,
@@ -275,7 +277,8 @@ const textToToken = new Map(Object.entries({
     "&=": SyntaxKind.AmpersandEqualsToken,
     "|=": SyntaxKind.BarEqualsToken,
     "^=": SyntaxKind.CaretEqualsToken,
-    "||=": SyntaxKind.BarBarEqualsToken,    
+    "||=": SyntaxKind.BarBarEqualsToken,
+    "&&=": SyntaxKind.AmpersandAmpersandEqualsToken,
     "??=": SyntaxKind.QuestionQuestionEqualsToken,
     "@": SyntaxKind.AtToken,
     "@@": SyntaxKind.AtAtToken,
@@ -329,12 +332,12 @@ const unicodeESNextIdentifierPart = [48, 57, 65, 90, 95, 95, 97, 122, 170, 170, 
 /**
  * Test for whether a single line comment with leading whitespace trimmed's text contains a directive.
  */
-const commentDirectiveRegExSingleLine = /^\/\/\/?\s*@(ts-expect-error|ts-ignore)/;
+const commentDirectiveRegExSingleLine = /^\/\/\/?\s*@(lpc-expect-error|lpc-ignore)/;
 
 /**
  * Test for whether a multi-line comment with leading whitespace trimmed's last line contains a directive.
  */
-const commentDirectiveRegExMultiLine = /^(?:\/|\*)*\s*@(ts-expect-error|ts-ignore)/;
+const commentDirectiveRegExMultiLine = /^(?:\/|\*)*\s*@(lpc-expect-error|lpc-ignore)/;
 
 const jsDocSeeOrLink = /@(?:see|link)/i;
 
@@ -1012,7 +1015,7 @@ export function createScanner(
     var nextState: (...args: any) => boolean | undefined;
     var stateId = 1;
     var nextStateId = 2;
-    var stateEndings: MapLike<SavedStatePos> = {};    
+    var stateEndings: SavedStatePos[] = [];
 
     // Current position (end position of text of current token)
     var pos: number;
@@ -1056,7 +1059,7 @@ export function createScanner(
         getStateId: () => stateId,
         getState,
         releaseState: ()=> { Debug.assertIsDefined(nextState); nextState?.(); },
-        resetSavedStates: () => { nextState = undefined; nextStateId = 2; stateId = 1; stateEndings = {} },
+        resetSavedStates: () => { nextState = undefined; nextStateId = 2; stateId = 1; stateEndings = [] },
         hasUnicodeEscape: () => (tokenFlags & TokenFlags.UnicodeEscape) !== 0,
         hasExtendedUnicodeEscape: () => (tokenFlags & TokenFlags.ExtendedUnicodeEscape) !== 0,
         hasPrecedingLineBreak: () => (tokenFlags & TokenFlags.PrecedingLineBreak) !== 0,
@@ -1480,12 +1483,12 @@ export function createScanner(
         let lastLineBreakPos = pos;
         let lastWsPos = pos;
         let lastLineTextOnly = "";
-
+        
         while (true) {
             if (pos >= end) {
                 result += text.substring(start, pos);
                 tokenFlags |= TokenFlags.Unterminated;
-                error(Diagnostics.Unterminated_string_literal);
+                error(Diagnostics.Unterminated_string_literal, lastNonWsPos, 1);
                 break;
             }
 
@@ -1514,8 +1517,11 @@ export function createScanner(
         const quoteChar = charCodeUnchecked(pos);
         pos++;
         let result = "";
+        // const sliceStart = pos;
         let start = pos;
+        // let offset = 0;
         while (true) {
+            // offset = 0;
             if (pos >= end) {
                 result += text.substring(start, pos);
                 tokenFlags |= TokenFlags.Unterminated;
@@ -1524,8 +1530,17 @@ export function createScanner(
             }
             const ch = charCodeUnchecked(pos);
             if (ch === quoteChar || (quoteChar === CharacterCodes.lessThan && ch === CharacterCodes.greaterThan)) {
+                if (quoteChar === CharacterCodes.singleQuote && ch === CharacterCodes.singleQuote && charCodeUnchecked(pos + 1) === CharacterCodes.singleQuote) {
+                    // this is a special case to handle ''' in LD
+                    result += text.substring(start, pos);
+                    result += "'";
+                    pos += 2;
+                    break;
+                }
+                
                 result += text.substring(start, pos);
                 pos++;
+                // offset = 1;
                 break;
             }
             if (ch === CharacterCodes.backslash && !jsxAttributeString) {
@@ -1542,8 +1557,11 @@ export function createScanner(
                 error(Diagnostics.Unterminated_string_literal);
                 break;
             }
+            // offset = 1;
             pos++;
         }
+
+        // return text.substring(sliceStart, pos - offset);        
         return result;
     }
 
@@ -2010,10 +2028,7 @@ export function createScanner(
         asteriskSeen = false;
 
         // Debug.assert(!stateEndings[stateId] || stateEndings[stateId].end <= pos, "State ending cannot be after the current position");
-        stateEndings[stateId] = {
-            end: pos,
-            fileName
-        };
+        stateEndings[stateId] = createPosState(pos, fileName);
 
         while (true) {
             tokenStart = pos;
@@ -2026,7 +2041,7 @@ export function createScanner(
                 const saveStateId = stateId;
                 dontRescan = nextState();
                                 
-                stateEndings[stateId] ??= { end: pos, fileName };
+                stateEndings[stateId] ??= createPosState(pos, fileName);
                 stateEndings[stateId].end = pos;
                 // Debug.assert(stateId !== saveStateId, "Scanner state must change");
                 streamSwitched = true;
@@ -2138,9 +2153,9 @@ export function createScanner(
                     return token = SyntaxKind.PercentToken;
                 case CharacterCodes.ampersand:
                     if (charCodeUnchecked(pos + 1) === CharacterCodes.ampersand) {
-                        // if (charCodeUnchecked(pos + 2) === CharacterCodes.equals) {
-                        //     // return pos += 3, token = SyntaxKind.AmpersandAmpersandEqualsToken;
-                        // }
+                        if (charCodeUnchecked(pos + 2) === CharacterCodes.equals) {
+                            return pos += 3, token = SyntaxKind.AmpersandAmpersandEqualsToken;
+                        }
                         return pos += 2, token = SyntaxKind.AmpersandAmpersandToken;
                     }
                     if (charCodeUnchecked(pos + 1) === CharacterCodes.equals) {
@@ -2152,16 +2167,23 @@ export function createScanner(
                     // if (charCodeUnchecked(pos + 1) === CharacterCodes.colon && charCodeUnchecked(pos + 2) !== CharacterCodes.colon) {
                     //     return pos += 2, token = SyntaxKind.OpenParenColonToken;
                     // }
-                    if (charCodeUnchecked(pos + 1) === CharacterCodes.openBracket) {
-                        return pos += 2, token = SyntaxKind.OpenParenBracketToken;
-                    }     
-                    if (charCodeUnchecked(pos + 1) === CharacterCodes.openBrace) {
-                        return pos += 2, token = SyntaxKind.OpenParenBraceToken;
-                    }  
                     if (charCodeUnchecked(pos + 1) === CharacterCodes.asterisk) {
                         return pos += 2, token = SyntaxKind.OpenParenAsteriskToken;
                     }             
+                    
+                    // advance past paren, then skip whitespace                    
                     pos++;
+                    while (pos < end && isWhiteSpaceLike(charCodeUnchecked(pos))) {
+                        pos++;
+                    }
+                    
+                    if (charCodeUnchecked(pos) === CharacterCodes.openBracket) {
+                        return pos += 1, token = SyntaxKind.OpenParenBracketToken;
+                    }     
+                    if (charCodeUnchecked(pos) === CharacterCodes.openBrace) {
+                        return pos += 1, token = SyntaxKind.OpenParenBraceToken;
+                    }  
+                                        
                     return token = SyntaxKind.OpenParenToken;
                 case CharacterCodes.closeParen:
                     pos++;
@@ -2433,9 +2455,19 @@ export function createScanner(
                     }
                     if (charCodeUnchecked(pos + 1) === CharacterCodes.question) {
                         if (charCodeUnchecked(pos + 2) === CharacterCodes.equals) {
-                            return pos += 3, token = SyntaxKind.QuestionQuestionEqualsToken;
+                            pos += 3;
+                            token = SyntaxKind.QuestionQuestionEqualsToken;
+                            if (languageVariant === LanguageVariant.LDMud) {
+                                error(Diagnostics.Operator_0_is_not_supported_in_LDMud, pos - 3, 3, "??=");
+                            }
+                            return token;
                         }
-                        return pos += 2, token = SyntaxKind.QuestionQuestionToken;
+                        pos += 2;
+                        token = SyntaxKind.QuestionQuestionToken;
+                        if (languageVariant === LanguageVariant.LDMud) {
+                            error(Diagnostics.Operator_0_is_not_supported_in_LDMud, pos - 2, 2, "??");
+                        }
+                        return token;
                     }
                     pos++;
                     return token = SyntaxKind.QuestionToken;
@@ -2760,10 +2792,10 @@ export function createScanner(
         }
 
         switch (match[1]) {
-            case "ts-expect-error":
+            case "lpc-expect-error":
                 return CommentDirectiveType.ExpectError;
 
-            case "ts-ignore":
+            case "lpc-ignore":
                 return CommentDirectiveType.Ignore;
         }
 
@@ -2805,10 +2837,7 @@ export function createScanner(
         tokenFlags = TokenFlags.None;
 
         Debug.assert(!stateEndings[stateId] || stateEndings[stateId].end <= pos, "State ending cannot be after the current position");
-        stateEndings[stateId] = {
-            end: pos,
-            fileName
-        };
+        stateEndings[stateId] = createPosState(pos, fileName);
         
         if (pos >= end) {
             return token = SyntaxKind.EndOfFileToken;
@@ -2840,10 +2869,7 @@ export function createScanner(
         tokenFlags = TokenFlags.None;
 
         // Debug.assert(!stateEndings[stateId] || stateEndings[stateId].end <= pos, "State ending cannot be after the current position");
-        stateEndings[stateId] = {
-            end: pos,
-            fileName
-        };
+        stateEndings[stateId] = createPosState(pos, fileName);
 
         if (pos >= end) {
             return token = SyntaxKind.EndOfFileToken;
@@ -3006,16 +3032,13 @@ export function createScanner(
         setText(newText, start, length);
         fileName = newFileName;
 
-        stateEndings[stateId] = {
-            end: pos, 
-            fileName
-        };
+        stateEndings[stateId] = createPosState(pos, fileName);
 
         return nextState;
     }    
 
     function speculationHelper<T>(callback: () => T, isLookahead: boolean): T {                
-        const saveStateCache = {...stateEndings};
+        const saveStateCache = [...stateEndings];
         const saveStateId = stateId;
         const saveNextId = nextStateId;
         const saveNextState = nextState;
@@ -3106,7 +3129,7 @@ export function createScanner(
         // save state, do a scan, then restore state
         const saveStateId = stateId;
         const saveNextId = nextStateId;
-        const saveStateCache = {...stateEndings};
+        const saveStateCache = [...stateEndings];
         const restoreState = captureCachedState();
         const scanStateId = stateId;     
         isSpeculating = false;
@@ -3114,7 +3137,7 @@ export function createScanner(
         fileName = "";
 
         // initialize the state ending
-        stateEndings[stateId] = { end: start, fileName };
+        stateEndings[stateId] = createPosState(start, fileName);
         
         setText(text, start, length);
         const result = callback();
@@ -3196,7 +3219,7 @@ export function createScanner(
         tokenValue = undefined!;
         tokenFlags = TokenFlags.None;        
         if (resetEnding) {
-            stateEndings[stateId] = { end: position, fileName };        
+            stateEndings[stateId] = createPosState(position, fileName);
         }
     }
 

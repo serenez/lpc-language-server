@@ -2,7 +2,7 @@
  * Copyright (c) Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
-
+import * as jsonc from "jsonc-parser";
 import * as vscode from "vscode";
 import * as path from "path";
 import {
@@ -25,6 +25,7 @@ import {
 import { ProgressIndicator } from "./ProgressIndicator";
 import { DocumentSelector } from "./documentSelector";
 import { LanguageDescription, isLpcConfigFileName, standardLanguageDescriptions } from "./configuration/languageDescription";
+import { NodeServiceConfigurationProvider } from "./configuration/configuration.node";
 
 let clientInitialized = false;
 let client: LanguageClient;
@@ -33,21 +34,56 @@ const progress = new ProgressIndicator();
 const _disposables: vscode.Disposable[] = [];
 let _isDisposed = false;
 
-export function activate(context: ExtensionContext) {
+export async function activate(context: ExtensionContext) {
+    const serviceConfigurationProvider = new NodeServiceConfigurationProvider();
+    const configuration = serviceConfigurationProvider.loadFromWorkspace();
+
     // The server is implemented in node
     const serverModule = context.asAbsolutePath(
         path.join("out", "server", "src", "server.js")
-    );    
+    );
+
+    const maxServerMemory = configuration.maxLpcServerMemory;
 
     // get location of efuns folder and pass to server as an argument
     const efunDir = context.asAbsolutePath("efuns");
 
-    let debugOptions = {
-        execArgv: ["--nolazy", "--enable-source-maps", "--inspect"]
+    const possibleConfigFiles = await vscode.workspace.findFiles("**/lpc-config.json");
+    let defaultDriverType: "ldmud" | "fluffos" = "ldmud";
+
+    if (possibleConfigFiles.length > 0) {
+        try {
+            const configBuffer = await vscode.workspace.fs.readFile(possibleConfigFiles[0]);
+            // convert uint8 array to string
+            const configString = Buffer.from(configBuffer).toString();                                   
+            const config = jsonc.parse(configString);         
+
+            defaultDriverType = config?.driver?.type ?? "ldmud";            
+        } catch {}
+    }
+
+    let debugOptions = {        
+        execArgv: [
+            // "--prof",
+            // "--log-deopt",
+            // "--log-ic",
+            // "--log-maps",
+            // "--log-maps-details",
+            // "--log-internal-timer-events",
+            // "--log-code",
+            // "--log-source-code",
+            // "--detailed-line-info",
+            // "--logfile=../lpc-language-server/v8.log",
+            "--nolazy", "--enable-source-maps", "--inspect", "--max-old-space-size=" + maxServerMemory],
     };
 
-    const serverArgs = [efunDir, "--serverMode", "semantic"];
-    const syntaxServerArgs = [efunDir, "--serverMode", "syntactic"];
+    const serverArgs = [
+        efunDir, 
+        "--driverType", defaultDriverType, 
+        "--serverMode", "semantic",
+        "--locale", configuration.locale ?? vscode.env.language,
+    ];
+    const syntaxServerArgs = [efunDir, "--driverType", defaultDriverType, "--serverMode", "syntactic"];
 
     // If the extension is launched in debug mode then the debug server options are used
     // Otherwise the run options are used
@@ -55,7 +91,7 @@ export function activate(context: ExtensionContext) {
         run: {
             module: serverModule,
             transport: TransportKind.ipc,
-            options: { execArgv: ["--enable-source-maps"] },
+            options: { execArgv: ["--enable-source-maps", "--max-old-space-size=" + maxServerMemory] },
             args: serverArgs,
         },
         debug: {
@@ -70,7 +106,10 @@ export function activate(context: ExtensionContext) {
     syntaxServerOptions.run.args = syntaxServerArgs;
     syntaxServerOptions.debug.args = syntaxServerArgs;
 
-    const docSel = [{ scheme: "file", language: "lpc" }];
+    const docSel = [
+        // lpc files
+        { scheme: "file", language: "lpc" },        
+    ];
 
     // Options to control the language client
     const clientOptions: LanguageClientOptions = {
@@ -83,14 +122,32 @@ export function activate(context: ExtensionContext) {
             // Notify the server about file changes to lpc config files contained in the workspace
             fileEvents: workspace.createFileSystemWatcher("**/lpc-config.json"),            
         },
-        diagnosticCollectionName: "LPC",
-    };
+        diagnosticCollectionName: "lpc",
+        
+    };    
 
     // Create the language client and start the client.
     client = new LanguageClient(
         "lpc",
         "LPC Language Server",
-        serverOptions,
+        {
+            options: {
+                env: [ "NODE_ENV=production" ],                
+            },
+            run: serverOptions.run,
+            debug: serverOptions.debug            
+            // debug: {
+            //     ...serverOptions.debug,
+            //     options: {
+            //         ...serverOptions.debug.options,
+            //         env: [ "NODE_ENV=production" ],
+            //         execArgv: [
+            //             ...serverOptions.debug.options.execArgv,
+            //             "--prof",
+            //         ],
+            //     }
+            // }
+        },
         clientOptions
     );
 
@@ -99,24 +156,7 @@ export function activate(context: ExtensionContext) {
 
     syntaxClient = new LanguageClient("lpc", "LPC Syntax Server", syntaxServerOptions, clientOptions);
     syntaxClient.start();
-          
-    context.subscriptions.push(
-        commands.registerCommand(
-            "lpc.processAll",
-            async (textEditor: TextEditor, _edit: TextEditorEdit) => {
-                client?.diagnostics?.clear();
-                progress.startAnimation();
-                return await client
-                    .sendRequest("textDocument/processAll", {})
-                    .catch((e) => {
-                        console.error("Error sending process all request", e);
-                        progress.stopAnimation();
-                        return e;
-                    });
-            }
-        )
-    );
-
+                  
     client.onNotification("lpc/initialized", () => {
         clientInitialized=true;
         // don't initialize providers until the server says its ready
@@ -137,8 +177,8 @@ export function activate(context: ExtensionContext) {
     });
     client.onNotification("lpc/info", (params) => {
         window.showWarningMessage(params);
-    });    
-    
+    });       
+        
     function _register<T extends vscode.Disposable>(value: T): T {
 		if (_isDisposed) {
 			value.dispose();
@@ -155,6 +195,7 @@ export function activate(context: ExtensionContext) {
         await Promise.all([
             import("./languageFeatures/semanticTokens").then(provider => _register(provider.register(selector, client))),
             import("./languageFeatures/jsDocCompletions").then(provider => _register(provider.register(selector, language, syntaxClient))),
+            import("./task/taskProvider").then(provider => _register(provider.register(context, client))),
         ]);
     }
     

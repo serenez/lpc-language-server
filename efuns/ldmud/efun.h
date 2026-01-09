@@ -16,7 +16,7 @@
  * 
  * s3 = xor_bits(s1, s2);
  * 
- * -> s3 is now "0 (", ie. a bitstring with bits 4 and 15 set.
+ * // -> s3 is now "0 (", ie. a bitstring with bits 4 and 15 set.
  *
  *
  */
@@ -154,9 +154,9 @@ mixed * xml_parse(string xml);
  * })
  * 
  * xml_generate(xml)
- * -> "<book language="common"><title>This is the title</title>"
- * "<chapter>This is a chapter</chapter><chapter>We want "
- * "<b>bold</b> here.</chapter></book>"
+ * // -> "<book language="common"><title>This is the title</title>"
+ * // "<chapter>This is a chapter</chapter><chapter>We want "
+ * // "<b>bold</b> here.</chapter></book>"
  *
  * @since Added in LDMud 3.3.718.
  *
@@ -225,15 +225,15 @@ int write_bytes(string file, int start, bytes str);
  * @example 
  * write("Hello world!\n"); 
  * 
- * Just print out a string.
+ * // Just print out a string.
  * 
  * write(this_player());
  * 
- * This will print out something like "OBJ(std/player#1234)".
+ * // This will print out something like "OBJ(std/player#1234)".
  * 
  * write( ({ "blub" }) );
  * 
- * Will print out "<ARRAY>".
+ * // Will print out "<ARRAY>".
  *
  * @param msg The message to write.
  */
@@ -248,19 +248,20 @@ void write(mixed msg);
  * The result is an array with one entry for every wizard (uid).
  * Every entry is an array itself:
  * 
- * string w[WL_NAME]        = Name of the wizard.
- * int    w[WL_COMMANDS]    = Weighted number of commands execute by
- * objects of this wizard.
+ * ```
+ * string w[WL_NAME]        // = Name of the wizard.
+ * int    w[WL_COMMANDS]    // = Weighted number of commands execute by objects of this wizard.
  * int    w[WL_COST],
- * int    w[WL_GIGACOST]       = Weighted sum of eval_costs.
+ * int    w[WL_GIGACOST]    // = Weighted sum of eval_costs.
  * int    w[WL_TOTAL_COST],
- * int    w[WL_TOTAL_GIGACOST] = Total sum of eval_costs.
- * int    w[WL_HEART_BEATS]   = Weighted count of heart_beats.
- * int    w[WL_CALL_OUT]      = Reserved for call_out() (unused yet).
- * int    w[WL_ARRAY_TOTAL]   = Total size of arrays in elements.
- * int    w[WL_MAPPING_TOTAL] = Total size of mappings in elements.
- * int    w[WL_STRUCT_TOTAL]  = Total size of structs in elements.
- * mixed  w[WL_EXTRA]         = Extra wizlist-info if set.
+ * int    w[WL_TOTAL_GIGACOST] // = Total sum of eval_costs.
+ * int    w[WL_HEART_BEATS]    // = Weighted count of heart_beats.
+ * int    w[WL_CALL_OUT]       // = Reserved for call_out() (unused yet).
+ * int    w[WL_ARRAY_TOTAL]    // = Total size of arrays in elements.
+ * int    w[WL_MAPPING_TOTAL]  // = Total size of mappings in elements.
+ * int    w[WL_STRUCT_TOTAL]   // = Total size of structs in elements.
+ * mixed  w[WL_EXTRA]          // = Extra wizlist-info if set.
+ * ```
  * 
  * The 'weighted' entries decay every hour by 10%.
  *
@@ -403,7 +404,7 @@ string variable_exists(string str, object|lwobject ob, int flags);
  * @example 
  * write(ctime(utime())+"\n");
  * 
- * Print out the current date and time.
+ * // Print out the current date and time.
  *
  * @since Introduced in LDMud 3.2.9.
  *
@@ -415,7 +416,7 @@ int * utime();
  *
  * Return an array containing all interactive users.
  *
- *
+ * @returns {__LPC_CONFIG_LIBFILES_PLAYER*} An array of all interactive users.
  */
 object * users();
 
@@ -3968,7 +3969,7 @@ float pow(int|float base, int|float exp);
  *
  * Return 1 if arg is a pointer, i.e. an array.
  *
- *
+ * @returns {arg is mixed*} 
  */
 int pointerp(mixed arg);
 
@@ -4272,7 +4273,7 @@ object* objects(object prev_ob, int num);
  *
  * Return 1 if arg is an object.
  *
- *
+ * @returns {arg is object} 1 if arg is an object, 0 otherwise.
  */
 int objectp(mixed arg);
 
@@ -4290,8 +4291,8 @@ int object_time(object ob);
 
 /**
  * object_name
- *
- * Get the name of an object <ob> or, if no argument is given, of
+ * @param ob The object to get the name of.
+ * @returns the name of an object `ob` or, if no argument is given, of
  * the current object.
  * 
  * As a special case, if <ob> is 0, the function returns 0.
@@ -4313,15 +4314,12 @@ int object_time(object ob);
  *
  * @example 
  * find_object(object_name(ob)) == ob
- * 
- * This is guaranteed to be true for all objects ob that are not
- * destructed.
+ * // This is guaranteed to be true for all objects ob that are not
+ * // destructed.
  *
- * @since 0 is accepted as argument since 3.2.9.
- *
+ * @since 0 is accepted as argument since 3.2.9. 
  */
 string object_name();
-
 string object_name(object ob);
 
 /**
@@ -4817,20 +4815,22 @@ int mkdir(string path);
  * argument, it returns the minimum value of the array contents.
  *
  * @example 
- * min(1)                     - returns 1
- * min(1, -1.1)               - returns -1.1
- * min("foo", "bar")          - returns "bar"
- * min( ({ "foo", "bar" }) )  - returns "bar"
+ * min(1)                     // returns 1
+ * min(1, -1.1)               // returns -1.1
+ * min("foo", "bar")          // returns "bar"
+ * min( ({ "foo", "bar" }) )  // returns "bar"
  *
  * @since Introduced in LDMud 3.2.9.
  *
  */
-int          min(varargs int arg );
-float        min(varargs float arg );
-int          min(int *arg_array);
-float        min(float *arg_array);
-string|bytes min(varargs string|bytes arg );
-string|bytes min(string|bytes *arg_array);
+int    min(varargs int arg );
+float  min(varargs float arg );
+int    min(int *arg_array);
+float  min(float *arg_array);
+string min(varargs string arg );
+bytes  min(varargs bytes arg );
+string min(string|bytes *arg_array);
+bytes  min(bytes *arg_array);
 
 /**
  * member
@@ -4977,7 +4977,7 @@ object master(int dont_load);
  *
  * Returns 1 if the argument is a mapping, or 0 if it is not.
  *
- *
+ * @returns {arg is mapping} 1 if arg is a mapping, 0 otherwise.
  */
 int mappingp(mixed arg);
 
@@ -5561,7 +5561,8 @@ string load_name(string obj);
  * Return true if ob is a living object (that is,
  * enable_commands() has been called from inside the ob).
  * ob may be 0.
- *
+ * @param ob the object to check
+ * @returns {ob is __LPC_CONFIG_LIBFILES_PLAYER} 1 if ob is a living object, 0 otherwise
  * @example 
  * living(this_player())
  *
@@ -5780,7 +5781,7 @@ string invert_bits(string str);
  *
  * Return 1 if arg is an integer number.
  *
- *
+ * @returns {arg is int} 1 if arg is an integer number, 0 otherwise
  */
 int intp(mixed arg);
 
@@ -6900,7 +6901,7 @@ float floor(float arg);
  *
  * Returns 1 if the arg is a floating point number, 0 else.
  *
- *
+ * @returns {n is float} 1 if n is a float, 0 else.
  */
 int floatp(mixed n);
 
@@ -8500,7 +8501,7 @@ int db_affected_rows(int handle);
 
 /**
  * ctime
- *
+ * @param clock The number of seconds since Jan, 1st, 1970, 0.00.
  * Interpret the argument clock as number of seconds since Jan,
  * 1st, 1970, 0.00 and convert it to a nice date and time string.
  * If clock is not specified, time() is used as default.
@@ -8513,14 +8514,13 @@ int db_affected_rows(int handle);
  * @example 
  * write(ctime()+"\n");
  * 
- * This will print out something like "Fri Jul 17 19:13:33 1992".
+ * // This will print out something like "Fri Jul 17 19:13:33 1992".
  *
  * @since LDMud 3.2.9 introduced the second form.
  *
  */
-string ctime(int clock);
-
-string ctime(int *uclock);
+varargs string ctime(int clock);
+varargs string ctime(int *uclock);
 
 /**
  * crypt

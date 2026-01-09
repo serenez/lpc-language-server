@@ -2,13 +2,12 @@
 
 Language server and VSCode extension that provides rich language support for LPC (Lars Pensjö C) - an object-oriented programming language derived from C and developed originally by Lars Pensjö to facilitate MUD building on LPMuds.
 
-Currently supports [LDMud](https://www.ldmud.eu/) and [FluffOS](https://www.fluffos.info/).
+This extension supports the LPC syntax used by both the [LDMud](https://www.ldmud.eu/) and [FluffOS](https://www.fluffos.info/) branch of [LPmud drivers](https://en.wikipedia.org/wiki/LPMud).
 
 Install from the VS Code Marketplace: https://marketplace.visualstudio.com/items?itemName=jlchmura.lpc
 
 **Attention v1.0 Users**
 If you are updating from the 1.0.x version, please see [config-changes.md](config-changes.md) for required changes to your `lpc-config.json` file.
-
 
 ## Features
 
@@ -20,11 +19,31 @@ If you are updating from the 1.0.x version, please see [config-changes.md](confi
     -   Go to definitions (f12)
     -   Go to implementations (ctrl/cmd+f12)
     -   Go to symbol (cltr/cmd+o)
-- Symbol rename (f2)
+-   Symbol rename (f2)
 -   Code outline
 -   Code navigation
+-   Folding (with support for `// #region` blocks)
+-   Build task
 
-### LPCDoc Comments
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md).
+
+## Example
+
+For an example mudlib, pre-configured to work with LPC Language Services, see the [Nightmare Residuum mudlib](https://github.com/michaelprograms/nightmare-residuum). 
+This mudlib has been fully annotated with [LPCDoc](#lpcdoc-comments) and can been successfully validated by the LPC Language Service and build task without errors.
+
+## If you love this extension, you could
+
+[<img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" >](https://www.buymeacoffee.com/jlchmura)
+
+## Semantic Analysis
+
+Semantic analysis (sometimes refered to as the _type checker_) will perform many useful checks on your code, but you must opt-in to this feature. 
+To enable semantic code analysis, set the [diagnostics](#diagnostics---diagnostics) options to `"on"`.
+
+## LPCDoc Comments
 
 LPC Language Services uses [JSDoc-style](https://www.typescriptlang.org/docs/handbook/jsdoc-supported-types.html) comments to provide additional context during hover and signature help.
 
@@ -42,18 +61,6 @@ int doCommand(string cmd) {
 ```
 Similar to typed languages like TypeScript, the type annotations are optional but can provide valuable context to the language server. For more, see [Type Annotations](#type-annotations), below.
 
-## If you love this extension, you could
-
-[<img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" >](https://www.buymeacoffee.com/jlchmura)
-
-## Changelog
-
-See [CHANGELOG.md](CHANGELOG.md).
-
-## Semantic Analysis
-
-Semantic analysis (sometimes refered to as the _type checker_) will perform many useful checks on your code, but you must opt-in to this feature. 
-To enable semantic code analysis, set the [diagnostics](#diagnostics---diagnostics) options to `"on"`.
 
 ### Disable Checks on Per-File Basis
 
@@ -67,7 +74,31 @@ Semantic checks can be disabled for a single file by placing a nocheck directive
 By default, the type checker will assume `this_object()` refers to the file in which you are working. At runtime, that is
 not always the case, in particular when the file is included in a larger object.  If needed, the type checker can be instructed to override the object type of `this_object()` by using a comment directive placed at the top of the file:
 ```js
-// @this-object /std/living
+// @this_object /std/living
+```
+
+### Ignoring a single line - `@lpc-ignore`
+You can instruct the checker to ignore errors on a single line by adding the `@lpc-ignore` comment directive:
+
+```c
+// @lpc-ignore - ignore int to string assignment error
+string foo = 123;
+```
+
+### Disabling checks for a single file - `@lpc-nocheck`
+Diagnostics can be disabled for an entire file by addding a `@lpc-nocheck` comment directive to the top of the file.
+
+```c
+// @lpc-nocheck
+... statements
+```
+
+### Expect an error - `@lpc-expect-error`
+Indiciates that the next line is expected to return an error. If it does not, the directive will be flagged as an error
+
+```c
+// @lpc-expect-error: method does not exist
+o->foo();
 ```
 
 ### Type Annotations
@@ -122,10 +153,6 @@ First create an `lpc-config.json` file that is used to store setting for the lan
 If no config file is found, the language server will still work but won't be able to take advante of global include files, include search dirs, etc.
 
 For example, see this [GLPU Fork](https://github.com/jlchmura/glpu) in which the config file is placed in the workspace root.
-
-### Example
-
-For an example mudlib, pre-configured to work with LPC Language Services, see this slightly modified version of the [LP 2.4.5 mudlib](https://github.com/jlchmura/lp-245). LPC Language Services can parse and validate this entire lib without errors.
 
 #### Driver Options - `driver`
 

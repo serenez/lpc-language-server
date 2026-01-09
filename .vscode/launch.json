@@ -11,9 +11,9 @@
                 // "${workspaceRoot}/../StickLib",
                 // "${workspaceRoot}/../mg-mudlib",
                 // "${workspaceRoot}/../lima",
-                // "${workspaceRoot}/../lpc-test2",
-                // "${workspaceRoot}/../glpu-john",
-                "${workspaceRoot}/../nightmare-residuum",
+                "${workspaceRoot}/../lpc-test2",
+                // "${workspaceRoot}/../dbjh2024",
+                // "${workspaceRoot}/../nightmare-residuum",
                 // "${workspaceRoot}/../infinity-lib",
                 // "${workspaceRoot}/../fluff-test",
                 //"${workspaceRoot}/efuns/ldmud",
@@ -59,6 +59,18 @@
             "sourceMaps": true,
             "outFiles": ["${workspaceFolder}/out/**/*.js"],
             "cwd": "${workspaceFolder}/../lpc-test2"
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Launch CLI",
+            "skipFiles": ["<node_internals>/**"],
+            "program": "${workspaceFolder}/out/server/src/bin/lpc.js",
+            "args": ["", "--project", "../nightmare-residuum"],
+            "preLaunchTask": "compile",
+            "sourceMaps": true,
+            "outFiles": ["${workspaceFolder}/out/**/*.js"],
+            "cwd": "${workspaceFolder}"
         },
         {
             "type": "node",

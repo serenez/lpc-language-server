@@ -16,7 +16,6 @@ import {
     FileReference,
     find,
     FloatLiteralType,
-    FlowNode,
     forEach,
     forEachChild,
     FunctionLikeDeclaration,
@@ -27,8 +26,7 @@ import {
     getNonAssignedNameOfDeclaration,
     getObjectFlags,
     getSourceFileOfNode,
-    getTokenPosOfNode,
-    HasLocals,
+    getTokenPosOfNode,    
     hasSyntacticModifier,
     Identifier,
     IndexKind,
@@ -38,7 +36,6 @@ import {
     isBindingPattern,
     isJSDocCommentContainingNode,
     isNodeKind,
-    isPropertyNameLiteral,
     JSDoc,
     JSDocContainer,
     LanguageVariant,
@@ -68,7 +65,6 @@ import {
     Symbol,
     SymbolFlags,
     SymbolLinks,
-    symbolName,
     SymbolTable,
     SyntaxKind,
     SyntaxList,
@@ -187,7 +183,6 @@ import {
     SignatureHelpItemsOptions,
     SignatureHelpItems,
     SignatureHelp,
-    isSourceFile,
     isDefineDirective,
     createLpcFileHandler,
     sys,
@@ -205,12 +200,15 @@ import {
     TextInsertion,
     getNewLineOrDefaultFromHost,
     PragmaMap,
-    factory,
-    setTextRangePosEnd,
+    ResolvedProjectReference,
+    CheckLpcDirective,
+    bindSourceFile,
+    tryGetTextOfPropertyName,
+    getSourceFileOrIncludeOfNode,
+    SourceFileBase,
 } from "./_namespaces/lpc.js";
 import * as classifier2020 from "./classifier2020.js";
 import { computeSuggestionDiagnostics } from "./suggestionDiagnostics.js";
-
 
 // These utilities are common to multiple language service features.
 // #region
@@ -234,7 +232,7 @@ function getServicesObjectAllocator(): ObjectAllocator {
 class TokenOrIdentifierObject<TKind extends SyntaxKind> implements Node {
     public kind: TKind;
     public pos: number;
-    public end: number;
+    public end: number;    
     public flags: NodeFlags;
     public modifierFlagsCache!: ModifierFlags;
     public transformFlags: TransformFlags;
@@ -242,11 +240,8 @@ class TokenOrIdentifierObject<TKind extends SyntaxKind> implements Node {
     public symbol!: Symbol;
     public jsDocComments?: JSDoc[];
     public id?: number;
-    public emitNode?: EmitNode | undefined;
-    public originFilename?: string;
-    public posInOrigin?: number;
-    public endInOrigin?: number;
-
+    public emitNode?: EmitNode | undefined;    
+    
     constructor(kind: TKind, pos: number, end: number) {
         // Note: if modifying this, be sure to update Token and Identifier in src/compiler/utilities.ts
         this.pos = pos;
@@ -261,6 +256,10 @@ class TokenOrIdentifierObject<TKind extends SyntaxKind> implements Node {
 
     public getSourceFile(): SourceFile {
         return getSourceFileOfNode(this);
+    }
+
+    public getSourceFileOrInclude(): SourceFileBase {
+        return getSourceFileOrIncludeOfNode(this);
     }
 
     public getStart(
@@ -278,32 +277,28 @@ class TokenOrIdentifierObject<TKind extends SyntaxKind> implements Node {
         return this.end;
     }
 
-    public getWidth(sourceFile?: SourceFile): number {
-        if (!!this.posInOrigin) {
-            return this.endInOrigin - this.posInOrigin;
-        } else {
-            return this.getEnd() - this.getStart(sourceFile);
-        }
+    public getWidth(sourceFile?: SourceFileBase): number {        
+        return this.getEnd() - this.getStart(sourceFile);        
     }
 
     public getFullWidth(): number {
         return this.end - this.pos;
     }
 
-    public getLeadingTriviaWidth(sourceFile?: SourceFile): number {
+    public getLeadingTriviaWidth(sourceFile?: SourceFileBase): number {
         return this.getStart(sourceFile) - this.pos;
     }
 
-    public getFullText(sourceFile?: SourceFile): string {
-        return (sourceFile || this.getSourceFile()).text.substring(
+    public getFullText(sourceFile?: SourceFileBase): string {
+        return (sourceFile || this.getSourceFileOrInclude()).text.substring(
             this.pos,
             this.end
         );
     }
 
-    public getText(sourceFile?: SourceFile): string {
+    public getText(sourceFile?: SourceFileBase): string {
         if (!sourceFile) {
-            sourceFile = this.getSourceFile();
+            sourceFile = this.getSourceFileOrInclude();
             Debug.assertIsDefined(sourceFile);
         }
         return sourceFile.text.substring(
@@ -339,10 +334,7 @@ class TokenOrIdentifierObject<TKind extends SyntaxKind> implements Node {
     }
 }
 
-class IdentifierObject
-    extends TokenOrIdentifierObject<SyntaxKind.Identifier>
-    implements Identifier
-{
+class IdentifierObject extends TokenOrIdentifierObject<SyntaxKind.Identifier> implements Identifier {
     public text!: string;
     declare _LpcjsDocContainerBrand: any;
     declare _primaryExpressionBrand: any;
@@ -359,10 +351,7 @@ class IdentifierObject
     }
 }
 
-class TokenObject<TKind extends SyntaxKind>
-    extends TokenOrIdentifierObject<TKind>
-    implements Token<TKind>
-{
+class TokenObject<TKind extends SyntaxKind> extends TokenOrIdentifierObject<TKind> implements Token<TKind> {
     constructor(kind: TKind, pos: number, end: number) {
         super(kind, pos, end);
     }
@@ -406,7 +395,7 @@ class NodeObject<TKind extends SyntaxKind> implements Node {
         this.id = 0;
         this.flags = NodeFlags.None;
         this.modifierFlagsCache = ModifierFlags.None;
-        this.transformFlags = TransformFlags.None;
+        this.transformFlags = TransformFlags.None;        
         this.parent = undefined!;
         this.original = undefined;
         this.emitNode = undefined;
@@ -423,6 +412,10 @@ class NodeObject<TKind extends SyntaxKind> implements Node {
 
     public getSourceFile(): SourceFile {
         return getSourceFileOfNode(this);
+    }
+
+    public getSourceFileOrInclude(): SourceFileBase {
+        return getSourceFileOrIncludeOfNode(this);
     }
 
     public getStart(
@@ -453,23 +446,23 @@ class NodeObject<TKind extends SyntaxKind> implements Node {
         return this.end - this.pos;
     }
 
-    public getLeadingTriviaWidth(sourceFile?: SourceFile): number {
+    public getLeadingTriviaWidth(sourceFile?: SourceFileBase): number {
         this.assertHasRealPosition();
         return this.getStart(sourceFile) - this.pos;
     }
 
-    public getFullText(sourceFile?: SourceFile): string {
+    public getFullText(sourceFile?: SourceFileBase): string {
         this.assertHasRealPosition();
-        return (sourceFile || this.getSourceFile()).text.substring(
+        return (sourceFile || this.getSourceFileOrInclude()).text.substring(
             this.pos,
             this.end
         );
     }
 
-    public getText(sourceFile?: SourceFile): string {
+    public getText(sourceFile?: SourceFileBase): string {
         this.assertHasRealPosition();
         if (!sourceFile) {
-            sourceFile = this.getSourceFile();
+            sourceFile = this.getSourceFileOrInclude();
         }
         return sourceFile.text.substring(
             this.getStart(sourceFile),
@@ -552,12 +545,12 @@ function createChildren(
     }
 
     scanner.setText((sourceFile || node.getSourceFile()).text);
-    let pos = node.includeDirPos ?? node.pos;
+    let pos = node.pos;
     Debug.assertIsDefined(pos);
     const processNode = (child: Node) => {
-        addSyntheticNodes(children, pos, child.includeDirPos ?? child.pos, node, sourceFile.inactiveCodeRanges);
+        addSyntheticNodes(children, pos, child.pos, node, sourceFile.inactiveCodeRanges);
         children.push(child);        
-        pos = child.includeDirEnd ?? child.end;
+        pos = child.end;
         Debug.assertIsDefined(pos);
     };
     const processNodes = (nodes: NodeArray<Node>) => {                
@@ -578,7 +571,7 @@ function createChildren(
         //         Debug.assert(n.pos >= node.pos);
         //     }
         // });
-        addSyntheticNodes(children, pos, nodes.pos, node, sourceFile.inactiveCodeRanges);                        
+        addSyntheticNodes(children, pos, nodes.pos, node, sourceFile.inactiveCodeRanges);
         pushIfDefined(children, createSyntaxList(nodes, node, sourceFile.inactiveCodeRanges));
         pos = nodes.end ?? 0;
         Debug.assertIsDefined(pos);
@@ -588,7 +581,7 @@ function createChildren(
     // For syntactic classifications, all trivia are classified together, including jsdoc comments.
     // For that to work, the jsdoc comments should still be the leading trivia of the first child.
     // Restoring the scanner position ensures that.
-    pos = node.includeDirPos ?? node.pos;
+    pos = node.pos;
     node.forEachChild(processNode, processNodes);
     if (pos >= 0) {
         // if pos is -1 then children had an empty syntax list
@@ -599,10 +592,7 @@ function createChildren(
     return children;
 }
 
-class SourceFileObject
-    extends NodeObject<SyntaxKind.SourceFile>
-    implements SourceFile
-{
+class SourceFileObject extends NodeObject<SyntaxKind.SourceFile> implements SourceFile {
     declare _declarationBrand: any;
     declare _localsContainerBrand: any;
     declare _hasHeritageBrand: any;
@@ -617,7 +607,7 @@ class SourceFileObject
     public statements!: NodeArray<Statement>;
     public endOfFileToken!: Token<SyntaxKind.EndOfFileToken>;
 
-    public amdDependencies!: { name: string; path: string }[];
+    // public amdDependencies!: { name: string; path: string }[];
     public moduleName!: string;
     public referencedFiles!: FileReference[];
     public typeReferenceDirectives!: FileReference[];
@@ -653,22 +643,21 @@ class SourceFileObject
     public pragmas!: PragmaMap;
     public localJsxFactory: EntityName | undefined;
     public localJsxNamespace: string | undefined;
+    public checkLpcDirective: CheckLpcDirective | undefined;
 
     constructor(kind: SyntaxKind.SourceFile, pos: number, end: number) {
         super(kind, pos, end);
     }
-    renamedDependencies?: ReadonlyMap<string, string>;
-    classifiableNames?: ReadonlySet<string>;
-    inherits: NodeArray<InheritDeclaration>;
-    endFlowNode?: FlowNode;
-    localSymbol?: Symbol;
-    locals?: SymbolTable;
-    nextContainer?: HasLocals;
 
-    public update(
-        newText: string,
-        textChangeRange: TextChangeRange
-    ): SourceFile {
+    // renamedDependencies?: ReadonlyMap<string, string>;
+    // classifiableNames?: ReadonlySet<string>;
+    // inherits: NodeArray<InheritDeclaration>;
+    // endFlowNode?: FlowNode;
+    // localSymbol?: Symbol;
+    // locals?: SymbolTable;
+    // nextContainer?: HasLocals;
+
+    public update(newText: string, textChangeRange: TextChangeRange): SourceFile {
         Debug.fail("not implemented");
         //return updateSourceFile(this, newText, textChangeRange);
     }
@@ -747,7 +736,7 @@ class SourceFileObject
 
         function getDeclarationName(declaration: Declaration) {
             const name = getNonAssignedNameOfDeclaration(declaration);
-            return name && (isComputedPropertyName(name) && isPropertyAccessExpression(name.expression) ? name.expression.name.text
+            return name && (isComputedPropertyName(name) && isPropertyAccessExpression(name.expression) ? tryGetTextOfPropertyName(name.expression.name)
                 : isPropertyName(name) ? getNameFromPropertyName(name) : undefined);            
         }
 
@@ -790,10 +779,11 @@ class SourceFileObject
                     forEachChild(node, visit);
                     break;
 
-                // case SyntaxKind.ClassDeclaration:
+                case SyntaxKind.ClassDeclaration:
                 case SyntaxKind.ClassExpression:
                 // case SyntaxKind.InterfaceDeclaration:
-                // case SyntaxKind.TypeAliasDeclaration:
+                case SyntaxKind.TypeAliasDeclaration:
+                case SyntaxKind.StructDeclaration:                
                 // case SyntaxKind.EnumDeclaration:
                 // case SyntaxKind.ModuleDeclaration:
                 // case SyntaxKind.ImportEqualsDeclaration:
@@ -997,18 +987,19 @@ function createSyntaxList(nodes: NodeArray<Node>, parent: Node, skipRanges: read
     ) as any as SyntaxList;
     const children: Node[] = [];
     let pos = nodes.pos;
-    const sourceFilename = isSourceFile(parent) ? parent.fileName : parent.originFilename;
     for (const node of nodes) {
         // TODO - disable hover on macros for now
         // if (!node.macro && (!node.originFilename || node.originFilename === sourceFilename)) {
-            addSyntheticNodes(children, pos, node.includeDirPos ?? node.pos, parent, skipRanges);
+            addSyntheticNodes(children, pos, node.pos, parent, skipRanges);
             children.push(node);
-            pos = node.includeDirEnd ?? node.end;            
+            pos = node.end;            
         // }
     }
     
     // if (children.length > 0) {
+    if ((parent.flags & NodeFlags.MacroContext) === 0) {
         addSyntheticNodes(children, pos, nodes.end, parent, skipRanges);    
+    }
     // }
     list._children = children;    
     return list;
@@ -1050,8 +1041,8 @@ class SymbolObject implements Symbol {
         this.id = 0;
         this.mergeId = 0;
         this.parent = undefined;
-        this.members = undefined;
-        this.exports = undefined;
+        this.members = undefined;        
+        this.exports = undefined;        
         this.exportSymbol = undefined;
         this.constEnumOnlyModule = undefined;
         this.isReferenced = undefined;
@@ -1611,7 +1602,8 @@ export function createLanguageService(
         // This array is retained by the program and will be used to determine if the program is up to date,
         // so we need to make a copy in case the host mutates the underlying array - otherwise it would look
         // like every program always has the host's current list of root files.
-        const rootFileNames = host.getScriptFileNames().slice();
+        const rootFileNames = host.getScriptFileNames().slice();                
+        const parseableFiles = new Set(host.getParseableFiles());
 
         // Get a fresh cache of the host information
         const newSettings = host.getCompilationSettings() || getDefaultCompilerOptions();
@@ -1677,16 +1669,17 @@ export function createLanguageService(
                 );
             },
             onReleaseOldSourceFile,
-            //onReleaseParsedCommandLine,
-            //hasInvalidatedResolutions,
-            //hasInvalidatedLibResolutions,
+            onReleaseParsedCommandLine,
+            onAllFilesNeedReparse,
+            hasInvalidatedResolutions,
+            hasInvalidatedLibResolutions,
             //hasChangedAutomaticTypeDirectiveNames,
             trace: maybeBind(host, host.trace),
             resolveModuleNames: maybeBind(host, host.resolveModuleNames),
-            // getModuleResolutionCache: maybeBind(
-            //     host,
-            //     host.getModuleResolutionCache
-            // ),
+            getModuleResolutionCache: maybeBind(
+                host,
+                host.getModuleResolutionCache
+            ),
             createHash: maybeBind(host, host.createHash),
             // resolveTypeReferenceDirectives: maybeBind(
             //     host,
@@ -1706,7 +1699,8 @@ export function createLanguageService(
                 host.useSourceOfProjectReferenceRedirect
             ),
             getParsedCommandLine,
-            jsDocParsingMode: host.jsDocParsingMode,
+            jsDocParsingMode: host.jsDocParsingMode,            
+            getParseableFiles: maybeBind(host, host.getParseableFiles),            
         };
 
         host.setCompilerHost?.(compilerHost);
@@ -1724,8 +1718,10 @@ export function createLanguageService(
             onUnRecoverableConfigFileDiagnostic: noop,
         };
         
+        
+
         // If the program is already up-to-date, we can reuse it
-        if (isProgramUptoDate(program, rootFileNames, newSettings, (_path, fileName) => host.getScriptVersion(fileName), fileName => compilerHost!.fileExists(fileName), hasInvalidatedResolutions, hasInvalidatedLibResolutions, hasChangedAutomaticTypeDirectiveNames, getParsedCommandLine, projectReferences)) {
+        if (isProgramUptoDate(program, rootFileNames, newSettings, (_path, fileName) => host.getScriptVersion(fileName), fileName => compilerHost!.fileExists(fileName), hasInvalidatedResolutions, hasInvalidatedLibResolutions, hasChangedAutomaticTypeDirectiveNames, getParsedCommandLine, projectReferences, parseableFiles)) {
             compilerHost = undefined;
             parsedCommandLines = undefined;
             releasedScriptKinds = undefined;
@@ -1744,7 +1740,7 @@ export function createLanguageService(
             host: compilerHost,
             oldProgram: program,
             projectReferences,
-        };
+        };        
         program = createProgram(options);
 
         // 'getOrCreateSourceFile' depends on caching but should be used past this point.
@@ -1760,7 +1756,9 @@ export function createLanguageService(
 
         // Make sure all the nodes in the program are both bound, and have their parent
         // pointers set property.
-        program.getTypeChecker();
+        if (program.getRootFileNames().length) {
+            program.getTypeChecker();
+        }
         return;
 
         function getOrCreateSourceFile(
@@ -1824,19 +1822,36 @@ export function createLanguageService(
             );
         }
 
+        function onAllFilesNeedReparse(fileNames: string[]): void {
+            if (host.onAllFilesNeedReparse) {
+                host.onAllFilesNeedReparse(fileNames);
+            }
+        }
+
+        function onReleaseParsedCommandLine(configFileName: string, oldResolvedRef: ResolvedProjectReference | undefined, oldOptions: CompilerOptions) {
+            if (host.getParsedCommandLine) {
+                host.onReleaseParsedCommandLine?.(configFileName, oldResolvedRef, oldOptions);
+            }
+            else if (oldResolvedRef) {
+                onReleaseOldSourceFile(oldResolvedRef.sourceFile, oldOptions);
+            }
+        }
+        
         function onReleaseOldSourceFile(
             oldSourceFile: SourceFile,
             oldOptions: CompilerOptions,
-            hasSourceFileByPath: boolean,
-            newSourceFileByResolvedPath: SourceFile | undefined
+            hasSourceFileByPath?: boolean,
+            newSourceFileByResolvedPath?: SourceFile | undefined
         ) {
             releaseOldSourceFile(oldSourceFile, oldOptions);
-            host.onReleaseOldSourceFile?.(
-                oldSourceFile,
-                oldOptions,
-                hasSourceFileByPath,
-                newSourceFileByResolvedPath
-            );
+            if (hasSourceFileByPath) {
+                host.onReleaseOldSourceFile?.(
+                    oldSourceFile,
+                    oldOptions,
+                    hasSourceFileByPath,
+                    newSourceFileByResolvedPath
+                );
+            }
         }
 
         function getSourceTextFromSnapshot(fileName: string): string | undefined {
@@ -1942,6 +1957,7 @@ export function createLanguageService(
 
             throw error;
         }
+        bindSourceFile(sourceFile, program.getCompilerOptions());
         return sourceFile;
     }
 
@@ -2008,7 +2024,7 @@ export function createLanguageService(
         return SignatureHelp.getSignatureHelpItems(program, sourceFile, position, triggerReason, cancellationToken);
     }
 
-    function getEncodedSemanticClassifications(fileName: string, span: TextSpan): Classifications {
+    function getEncodedSemanticClassifications(fileName: string, span: TextSpan): Classifications {        
         synchronizeHostData();
                 
         return classifier2020.getEncodedSemanticClassifications(program, cancellationToken, getValidSourceFile(fileName), span);        
@@ -2163,6 +2179,7 @@ export function updateLanguageServiceSourceFile(
     version: string,
     textChangeRange: TextChangeRange | undefined,    
     languageVariant: LanguageVariant,
+    reportParsedDefines: boolean,
     aggressiveChecks?: boolean
 ): SourceFile {
     // If we were given a text change range, and our version or open-ness changed, then
@@ -2235,7 +2252,9 @@ export function updateLanguageServiceSourceFile(
         setExternalModuleIndicator: sourceFile.setExternalModuleIndicator,
         jsDocParsingMode: sourceFile.jsDocParsingMode,
         globalIncludes,
-        fileHandler
+        fileHandler,
+        reportParsedDefines,
+        configDefines
     };
     // Otherwise, just create a new source file.
     return createLanguageServiceSourceFile(
@@ -2257,8 +2276,15 @@ function getSymbolAtLocationForQuickInfo(node: Node, checker: TypeChecker): Symb
     //     if (properties && properties.length === 1) {
     //         return first(properties);
     //     }
-    // }
-    return checker.getSymbolAtLocation(node);
+    // }  
+    if (node.flags & NodeFlags.MacroContext) {
+        // the macro name for each node is stored in a map on the sourcefile
+        const macroName = node.getSourceFile()?.nodeMacroMap.get(node);
+        return macroName && checker.resolveName(macroName, node.parent, SymbolFlags.Define, false);                    
+    }
+
+    const symbol = checker.getSymbolAtLocation(node);    
+    return symbol;
 }
 
 /** @internal */
@@ -2431,18 +2457,19 @@ class SyntaxTreeCache {
                 readFile: fileName => sys.readFile(fileName),
                 getCurrentDirectory: () => sys.getCurrentDirectory(),
                 getIncludeDirs: ()=>this.host.getIncludeDirs(),  
+                getCompilerOptions: () => this.host.getCompilationSettings(),
             })
         }; 
 
-        if (this.currentFileName !== fileName) {                       
+        // if (this.currentFileName !== fileName) {                       
             sourceFile = createLanguageServiceSourceFile(fileName, scriptSnapshot, options, version, /*setNodeParents*/ true, languageVariant, scriptKind);
-        }
-        else if (this.currentFileVersion !== version) {            
-            // This is the same file, just a newer version. Incrementally parse the file.
-            const editRange = scriptSnapshot.getChangeRange(this.currentFileScriptSnapshot!);
+        // }
+        // else if (this.currentFileVersion !== version) {            
+        //     // This is the same file, just a newer version. Incrementally parse the file.
+        //     const editRange = scriptSnapshot.getChangeRange(this.currentFileScriptSnapshot!);
                         
-            sourceFile = updateLanguageServiceSourceFile(this.currentSourceFile!, options.globalIncludes, options.configDefines, options.fileHandler, scriptSnapshot, version, editRange, languageVariant);
-        }
+        //     sourceFile = updateLanguageServiceSourceFile(this.currentSourceFile!, options.globalIncludes, options.configDefines, options.fileHandler, scriptSnapshot, version, editRange, languageVariant, false);
+        // }
 
         if (sourceFile) {
             // All done, ensure state is up to date

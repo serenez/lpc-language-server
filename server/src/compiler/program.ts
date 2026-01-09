@@ -1,5 +1,4 @@
-import path from "path";
-import { getDeclarationDiagnostics as lpc_getDeclarationDiagnostics, forEachResolvedProjectReference as lpc_forEachResolvedProjectReference, combinePaths, compareValues, CompilerHost, CompilerOptions, containsPath, createDiagnosticCollection, createGetCanonicalFileName, createMultiMap, CreateProgramOptions, createSourceFile, Diagnostic, DiagnosticArguments, DiagnosticMessage, Diagnostics, DiagnosticWithLocation, FileIncludeKind, FileIncludeReason, FilePreprocessingDiagnostics, FilePreprocessingDiagnosticsKind, forEach, getBaseFileName, getDirectoryPath, getNewLineCharacter, getRootLength, hasExtension, isArray, maybeBind, memoize, normalizePath, ObjectLiteralExpression, PackageId, Path, performance, Program, ProgramHost, ProjectReference, PropertyAssignment, ReferencedFile, removePrefix, removeSuffix, ResolvedModuleWithFailedLookupLocations, ResolvedProjectReference, SourceFile, stableSort, StructureIsReused, sys, System, toPath as lpc_toPath, tracing, TypeChecker, getNormalizedAbsolutePathWithoutRoot, some, isRootedDiskPath, optionsHaveChanges, packageIdToString, toFileNameLowerCase, getNormalizedAbsolutePath, CreateSourceFileOptions, createTypeChecker, ScriptTarget, libs, FileReference, SortedReadonlyArray, concatenate, sortAndDeduplicateDiagnostics, emptyArray, LpcFileHandler, createLpcFileHandler, DiagnosticMessageChain, isString, CancellationToken, flatMap, filter, Debug, ScriptKind, flatten, OperationCanceledException, noop, getNormalizedPathComponents, GetCanonicalFileName, getPathFromPathComponents, WriteFileCallback, EmitHost, WriteFileCallbackData, getDefaultLibFileName, LibResolution, returnFalse, isTraceEnabled, trace, equateStringsCaseSensitive, equateStringsCaseInsensitive, NodeFlags, ResolvedModuleFull, Extension, ResolutionMode, ModeAwareCache, isExternalModule, StringLiteral, Identifier, isCloneObjectExpression, isStringLiteral, setParentRecursive, append, Node, SyntaxKind, forEachChild, ResolutionWithFailedLookupLocations, createModeAwareCache, ModuleKind, ResolvedTypeReferenceDirectiveWithFailedLookupLocations, ModuleResolutionCache, contains, createModuleResolutionCache, ModuleResolutionHost, ModeAwareCacheKey, createModeAwareCacheKey, resolveModuleName, isInheritDeclaration, LogLevel, PackageJsonInfoCache, StringLiteralLike, skipTrivia, getSourceFileOfNode, hasLPCFileExtension, getNormalizedModuleName, isIncludeDirective, first, createEvaluator, forEachChildRecursively, factory, LanguageVariant, ResolvedConfigFileName, resolveConfigFileProjectName,     createMasterApplyGetIncludePathVm, memoizeOne, getRelativePathFromFile, getRelativePathFromDirectory, map, resolvePath, diagnosticCategoryName, getLineAndCharacterOfPosition, convertToRelativePath, BuilderProgram, addRange, explainIfFileIsRedirectAndImpliedFormat, chainDiagnosticMessages, createFileDiagnosticFromMessageChain, createCompilerDiagnosticFromMessageChain, fileIncludeReasonToDiagnostics, createFileDiagnostic, getMatchedFileSpec, createDiagnosticForNodeInSourceFile, FilePreprocessingLibReferenceDiagnostic, getSpellingSuggestion, identity, HasInvalidatedLibResolutions, HasInvalidatedResolutions, ParsedCommandLine, arrayIsEqualTo, forEachEntry, projectReferenceIsEqualTo, compareDataObjects, HasChangedAutomaticTypeDirectiveNames, isJSDocTypeTag, hasJSDocNodes, isJSDoc, isJSDocNode, isJSDocTypeExpression, isLiteralTypeNode, getLiteralText, GetLiteralTextFlags, isStringLiteralLike, isJSDocParameterTag, isJSDocReturnTag, isTypePredicateNode, StringLiteralType, isPropertyAccessExpression, Mutable, ImportCandidateNode, isNewExpression, isTypeNode, getLibRootedFileName, isJSDocPropertyTag, PragmaPseudoMapEntry, setParent, setTextRangePosEnd, PragmaPseudoMap, TextRange, CommentRange, thisObjectPragmaToStringLiteral, emptyMap, getLpcConfigPropArrayElementValue, forEachLpcConfigPropArray, LpcConfigSourceFile, isArrayLiteralExpression, tryCast, isObjectLiteralExpression, forEachPropertyAssignment, getLpcConfigObjectLiteralExpression, getPropertyArrayElementValue, getNameOfScriptTarget, getEmitScriptTarget, setTextRange, isCallExpression, isIdentifier, changesAffectModuleResolution, sourceFileAffectingCompilerOptions, hasChangesInResolutions, moduleResolutionIsEqualTo, changesAffectingProgramStructure, isBinaryExpression, isArrayTypeNode, LiteralTypeNode, LiteralExpression, isJSDocVariableTag } from "./_namespaces/lpc.js";
+import { getDeclarationDiagnostics as lpc_getDeclarationDiagnostics, forEachResolvedProjectReference as lpc_forEachResolvedProjectReference, combinePaths, compareValues, CompilerHost, CompilerOptions, containsPath, createDiagnosticCollection, createGetCanonicalFileName, createMultiMap, CreateProgramOptions, createSourceFile, Diagnostic, DiagnosticArguments, DiagnosticMessage, Diagnostics, DiagnosticWithLocation, FileIncludeKind, FileIncludeReason, FilePreprocessingDiagnostics, FilePreprocessingDiagnosticsKind, forEach, getBaseFileName, getDirectoryPath, getNewLineCharacter, getRootLength, hasExtension, isArray, maybeBind, memoize, normalizePath, ObjectLiteralExpression, PackageId, Path, performance, Program, ProgramHost, ProjectReference, PropertyAssignment, ReferencedFile, removePrefix, removeSuffix, ResolvedModuleWithFailedLookupLocations, ResolvedProjectReference, SourceFile, stableSort, StructureIsReused, sys, System, toPath as lpc_toPath, tracing, TypeChecker, getNormalizedAbsolutePathWithoutRoot, some, isRootedDiskPath, optionsHaveChanges, packageIdToString, toFileNameLowerCase, getNormalizedAbsolutePath, CreateSourceFileOptions, createTypeChecker, ScriptTarget, libs, FileReference, SortedReadonlyArray, concatenate, sortAndDeduplicateDiagnostics, emptyArray, LpcFileHandler, createLpcFileHandler, DiagnosticMessageChain, isString, CancellationToken, flatMap, filter, Debug, ScriptKind, flatten, OperationCanceledException, noop, getNormalizedPathComponents, GetCanonicalFileName, getPathFromPathComponents, WriteFileCallback, EmitHost, WriteFileCallbackData, getDefaultLibFileName, LibResolution, returnFalse, isTraceEnabled, trace, equateStringsCaseSensitive, equateStringsCaseInsensitive, NodeFlags, ResolvedModuleFull, Extension, ResolutionMode, ModeAwareCache, isExternalModule, StringLiteral, Identifier, isCloneObjectExpression, isStringLiteral, setParentRecursive, append, Node, SyntaxKind, forEachChild, ResolutionWithFailedLookupLocations, createModeAwareCache, ModuleKind, ResolvedTypeReferenceDirectiveWithFailedLookupLocations, ModuleResolutionCache, contains, createModuleResolutionCache, ModuleResolutionHost, ModeAwareCacheKey, createModeAwareCacheKey, resolveModuleName, isInheritDeclaration, LogLevel, PackageJsonInfoCache, StringLiteralLike, skipTrivia, getSourceFileOfNode, hasLPCFileExtension, getNormalizedModuleName, isIncludeDirective, first, createEvaluator, forEachChildRecursively, factory, LanguageVariant, ResolvedConfigFileName, resolveConfigFileProjectName,     createMasterApplyGetIncludePathVm, memoizeOne, getRelativePathFromFile, getRelativePathFromDirectory, map, resolvePath, diagnosticCategoryName, getLineAndCharacterOfPosition, convertToRelativePath, BuilderProgram, addRange, explainIfFileIsRedirectAndImpliedFormat, chainDiagnosticMessages, createFileDiagnosticFromMessageChain, createCompilerDiagnosticFromMessageChain, fileIncludeReasonToDiagnostics, createFileDiagnostic, getMatchedFileSpec, createDiagnosticForNodeInSourceFile, FilePreprocessingLibReferenceDiagnostic, getSpellingSuggestion, identity, HasInvalidatedLibResolutions, HasInvalidatedResolutions, ParsedCommandLine, arrayIsEqualTo, forEachEntry, projectReferenceIsEqualTo, compareDataObjects, HasChangedAutomaticTypeDirectiveNames, isJSDocTypeTag, hasJSDocNodes, isJSDoc, isJSDocNode, isJSDocTypeExpression, isLiteralTypeNode, getLiteralText, GetLiteralTextFlags, isStringLiteralLike, isJSDocParameterTag, isJSDocReturnTag, isTypePredicateNode, StringLiteralType, isPropertyAccessExpression, Mutable, ImportCandidateNode, isNewExpression, isTypeNode, getLibRootedFileName, isJSDocPropertyTag, PragmaPseudoMapEntry, setParent, setTextRangePosEnd, PragmaPseudoMap, TextRange, CommentRange, thisObjectPragmaToStringLiteral, emptyMap, getLpcConfigPropArrayElementValue, forEachLpcConfigPropArray, LpcConfigSourceFile, isArrayLiteralExpression, tryCast, isObjectLiteralExpression, forEachPropertyAssignment, getLpcConfigObjectLiteralExpression, getPropertyArrayElementValue, getNameOfScriptTarget, getEmitScriptTarget, setTextRange, isCallExpression, isIdentifier, changesAffectModuleResolution, sourceFileAffectingCompilerOptions, hasChangesInResolutions, moduleResolutionIsEqualTo, changesAffectingProgramStructure, isBinaryExpression, isArrayTypeNode, LiteralTypeNode, LiteralExpression, isJSDocVariableTag, changesAffectLibCompilation, getMatchedIncludeSpec, tryGetLocalizedLibPath, isInExternalFileContext, DiagnosticCategory, forEachAncestorDirectory, getPositionOfLineAndCharacter, SourceFileBase, getPathComponents, diagnosticPrefix, createDiagnosticForRange, CommentDirective, createCommentDirectivesMap, CommentDirectivesMap, getLineStarts, computeLineAndCharacterOfPosition, skipTypeChecking, isUnionTypeNode, firstOrUndefined, TypeNode, BinaryExpression, isIntersectionTypeNode, isJSDocTypedefTag, isTypeLiteralNode, isJSDocTypeLiteral, JSDocImportCandidateNode, isNamedObjectTypeNode, bindSourceFile, hostGetCanonicalFileName, ReadonlyPragmaContext, getStringLiteralsTextRecursively } from "./_namespaces/lpc.js";
 
 interface FileReasonToChainCache {
     fileIncludeReasonDetails: DiagnosticMessageChain | undefined;
@@ -36,8 +35,8 @@ export function createProgram(rootNames: readonly string[], options: CompilerOpt
 export function createProgram(rootNamesOrOptions: readonly string[] | CreateProgramOptions, _options?: CompilerOptions, _host?: CompilerHost, _oldProgram?: Program, _configFileParsingDiagnostics?: readonly Diagnostic[]): Program {
     const createProgramOptions = isArray(rootNamesOrOptions) ? createCreateProgramOptions(rootNamesOrOptions, _options!, _host, _oldProgram, _configFileParsingDiagnostics) : rootNamesOrOptions; // TODO: GH#18217
     const { rootNames, options, configFileParsingDiagnostics, projectReferences, typeScriptVersion } = createProgramOptions;
-    let { oldProgram } = createProgramOptions;
-    
+    let { oldProgram } = createProgramOptions;    
+
     // const host = createProgramOptions.host || createCompilerHost(options);
     // const readFile = host.readFile.bind(host) as typeof host.readFile;
 
@@ -93,8 +92,7 @@ export function createProgram(rootNamesOrOptions: readonly string[] | CreateProg
 
     const host = createProgramOptions.host || createCompilerHost(options);
     //const configParsingHost = parseConfigHostFromCompilerHostLike(host);
-
-    //let skipDefaultLib = options.noLib;
+    
     // const getDefaultLibraryFileName = memoize(() => host.getDefaultLibFileName(options));
     const defaultLibraryPath = "TODO";//host.getDefaultLibLocation ? host.getDefaultLibLocation() : getDirectoryPath(getDefaultLibraryFileName());
     /**
@@ -115,6 +113,11 @@ export function createProgram(rootNamesOrOptions: readonly string[] | CreateProg
     
     let skipDefaultLib = options.noLib;
     const getDefaultLibraryFileName = memoize(() => host.getDefaultLibFileName(options));
+
+    let configDefines: ReadonlyMap<string, string> | undefined;
+
+    // Set of files that are currently marked as parsable 
+    const parseableFiles = host.getParseableFiles();
 
     /**
      * map with
@@ -163,7 +166,8 @@ export function createProgram(rootNamesOrOptions: readonly string[] | CreateProg
         fileExists: fileName => sys.fileExists(fileName),
         readFile: fileName => getSourceFromSnapshotOrDisk(fileName),
         getCurrentDirectory: () => sys.getCurrentDirectory(),
-        getIncludeDirs
+        getIncludeDirs,
+        getCompilerOptions: () => options,
     });
 
     
@@ -177,6 +181,13 @@ export function createProgram(rootNamesOrOptions: readonly string[] | CreateProg
     const readFile = host.readFile.bind(host) as typeof host.readFile;
     const shouldCreateNewSourceFile = shouldProgramCreateNewSourceFiles(oldProgram, options);
     
+    if (oldProgram && host.onAllFilesNeedReparse && changesAffectLibCompilation(oldProgram.getCompilerOptions(), options)) {                
+        // if the config of certain lib files changes, we need to force everything to be reparsed.        
+        // this is more than just not reusing the structure of the old program
+        const oldSourceFiles = oldProgram.getSourceFiles().filter(sf => !sf.isDefaultLib).map(sf => sf.fileName);
+        host.onAllFilesNeedReparse(oldSourceFiles);        
+    }
+
     const hasInvalidatedLibResolutions = host.hasInvalidatedLibResolutions || returnFalse;
     let actualResolveLibrary: (libraryName: string, resolveFrom: string, options: CompilerOptions, libFileName: string) => ResolvedModuleWithFailedLookupLocations;
     
@@ -188,12 +199,12 @@ export function createProgram(rootNamesOrOptions: readonly string[] | CreateProg
     let structureIsReused: StructureIsReused;
     tracing?.push(tracing.Phase.Program, "tryReuseStructureFromOldProgram", {});
     structureIsReused = tryReuseStructureFromOldProgram();
-    tracing?.pop();
+    tracing?.pop();    
 
     if (structureIsReused !== StructureIsReused.Completely) {
         processingDefaultLibFiles = [];
         processingOtherFiles = [];
-
+        
         if (projectReferences) {
             if (!resolvedProjectReferences) {
                 resolvedProjectReferences = projectReferences.map(parseProjectReferenceConfigFile);
@@ -227,12 +238,15 @@ export function createProgram(rootNamesOrOptions: readonly string[] | CreateProg
             }
         }
 
+        // get initial defines based on config - these are needed by the lib files which get parsed next
+        configDefines = getConfigDefines(options);
+
         // before loading any files, load the lib file to get driver defines
         // the lib file will be loaded in full later        
         if (rootNames.length && !skipDefaultLib) {            
             const defaultLibraryFileName = getDefaultLibraryFileName();
             if (!options.lib && defaultLibraryFileName) {
-                const libSourceFile = getSourceFileWithoutReferences(defaultLibraryFileName, /*isDefaultLib*/ false, { kind: FileIncludeKind.LibFile });                            
+                const libSourceFile = getSourceFileWithoutReferences(defaultLibraryFileName, /*isDefaultLib*/ true, { kind: FileIncludeKind.LibFile });                            
                 if (libSourceFile && libSourceFile.parsedMacros) {                
                     options.configDefines = options.configDefines || {};
                     // add macros from the default lib to the config table
@@ -246,6 +260,9 @@ export function createProgram(rootNamesOrOptions: readonly string[] | CreateProg
                 }
             }
         }
+
+        // rebuild defines including driver defines which were provided by the lib files
+        configDefines = getConfigDefines(options);
                         
         // check if this program has a master file and if so
         // get an instance of it and compile the get_include_path apply function
@@ -264,8 +281,19 @@ export function createProgram(rootNamesOrOptions: readonly string[] | CreateProg
         }
 
         tracing?.push(tracing.Phase.Program, "processRootFiles", { count: rootNames.length });
-        forEach(rootNames, (name, index) => processRootFile(name, /*isDefaultLib*/ false, /*ignoreNoDefaultLib*/ false, { kind: FileIncludeKind.RootFile, index }));
+        forEach(rootNames, (name, index) => {
+            // only process the file if it is marked as parseable
+            if (!parseableFiles || parseableFiles.has(toPath(name))) {
+                processRootFile(name, /*isDefaultLib*/ false, /*ignoreNoDefaultLib*/ false, { kind: FileIncludeKind.RootFile, index })
+            }
+        });
         tracing?.pop();                
+        
+        if (options.sefunFile && fileExists(options.sefunFile)) {
+            // sefun file always gets processed
+            const sefunFileIndex = rootNames.indexOf(options.sefunFile);
+            processRootFile(options.sefunFile, /*isDefaultLib*/ false, /*ignoreNoDefaultLib*/ false, { kind: FileIncludeKind.RootFile, index: sefunFileIndex });
+        }                                
         
         // Do not process the default library if:
         //  - The '--noLib' flag is used.
@@ -275,8 +303,7 @@ export function createProgram(rootNamesOrOptions: readonly string[] | CreateProg
             // If '--lib' is not specified, include default library file according to '--target'
             // otherwise, using options specified in '--lib' instead of '--target' default library file
             const defaultLibraryFileName = getDefaultLibraryFileName();
-            if (!options.lib && defaultLibraryFileName) {
-                // console.log("Loading default library file: " + defaultLibraryFileName);
+            if (!options.lib && defaultLibraryFileName) {                
                 processRootFile(defaultLibraryFileName, /*isDefaultLib*/ true, /*ignoreNoDefaultLib*/ false, { kind: FileIncludeKind.LibFile });
             }
             else {
@@ -316,19 +343,19 @@ export function createProgram(rootNamesOrOptions: readonly string[] | CreateProg
     }
 
     // Release commandlines that new program does not use
-    // if (oldProgram && host.onReleaseParsedCommandLine) {
-    //     forEachProjectReference(
-    //         oldProgram.getProjectReferences(),
-    //         oldProgram.getResolvedProjectReferences(),
-    //         (oldResolvedRef, parent, index) => {
-    //             const oldReference = parent?.commandLine.projectReferences![index] || oldProgram!.getProjectReferences()![index];
-    //             const oldRefPath = resolveProjectReferencePath(oldReference);
-    //             if (!projectReferenceRedirects?.has(toPath(oldRefPath))) {
-    //                 host.onReleaseParsedCommandLine!(oldRefPath, oldResolvedRef, oldProgram!.getCompilerOptions());
-    //             }
-    //         },
-    //     );
-    // }
+    if (oldProgram && host.onReleaseParsedCommandLine) {
+        forEachProjectReference(
+            oldProgram.getProjectReferences(),
+            oldProgram.getResolvedProjectReferences(),
+            (oldResolvedRef, parent, index) => {
+                const oldReference = parent?.commandLine.projectReferences![index] || oldProgram!.getProjectReferences()![index];
+                const oldRefPath = resolveProjectReferencePath(oldReference);
+                if (!projectReferenceRedirects?.has(toPath(oldRefPath))) {
+                    host.onReleaseParsedCommandLine!(oldRefPath, oldResolvedRef, oldProgram!.getCompilerOptions());
+                }
+            },
+        );
+    }
 
     // unconditionally set oldProgram to undefined to prevent it from being captured in closure
     oldProgram = undefined;
@@ -336,8 +363,11 @@ export function createProgram(rootNamesOrOptions: readonly string[] | CreateProg
     resolvedModulesProcessing = undefined;
     //resolvedTypeReferenceDirectiveNamesProcessing = undefined;
 
+    // make a copy of the parseable files set so we can track changes
+    const currentParsableFiles = new Set(parseableFiles);
     const program: Program = {
         getRootFileNames: () => rootNames,
+        getParseableFiles: () => currentParsableFiles,
         getDriverType: () => options.driverType,
         getSourceFile,
         getSourceFileByPath,
@@ -365,7 +395,7 @@ export function createProgram(rootNamesOrOptions: readonly string[] | CreateProg
         getSymbolCount: () => getTypeChecker().getSymbolCount(),
         getTypeCount: () => getTypeChecker().getTypeCount(),
         getInstantiationCount: () => getTypeChecker().getInstantiationCount(),
-        //getRelationCacheSizes: () => getTypeChecker().getRelationCacheSizes(),
+        getRelationCacheSizes: () => getTypeChecker().getRelationCacheSizes(),
         getFileProcessingDiagnostics: () => fileProcessingDiagnostics,
         // getAutomaticTypeDirectiveNames: () => automaticTypeDirectiveNames!,
         // getAutomaticTypeDirectiveResolutions: () => automaticTypeDirectiveResolutions,
@@ -412,7 +442,8 @@ export function createProgram(rootNamesOrOptions: readonly string[] | CreateProg
         structureIsReused,
         // writeFile,
         getIncludeDirs,
-        masterIncludeApply
+        masterIncludeApply,
+        getConfigDefines: () => configDefines,
     };
 
     //onProgramCreateComplete();
@@ -436,8 +467,9 @@ export function createProgram(rootNamesOrOptions: readonly string[] | CreateProg
         if (masterIncludeApply) {
             // convert disk rooted paths to mudlib paths            
             const rootDir = options.rootDir ?? getDirectoryPath(options.configFilePath);
-            const relativePath = getRelativePathFromDirectory(rootDir, fileName, host.getCanonicalFileName);
-            const mudlibPath = path.sep == "/" ? relativePath : relativePath.replace(/\\/g, "/");
+            const relativePath = getRelativePathFromDirectory(rootDir, fileName, host.getCanonicalFileName);            
+                        
+            const mudlibPath = normalizePath(relativePath);// path.sep == "/" ? relativePath : relativePath.replace(/\\/g, "/");
 
             // paths come back from master apply as rooted (to the lib). We need to conver them to disk rooted paths.
             const includesForFile = map(masterIncludeApply(mudlibPath), dir => dir != ":DEFAULT:" ? resolvePath(rootDir, "." + dir) : dir);
@@ -459,12 +491,13 @@ export function createProgram(rootNamesOrOptions: readonly string[] | CreateProg
      * Did you really mean to call this?  You probably want `getSourceFile`
      * @param fileName 
      * @returns source text
+     * @internal
      */
     function getSourceFromSnapshotOrDisk(fileName: string): string | undefined {                
         return host.getSourceTextFromSnapshot(fileName) ?? sys.readFile(fileName);                
     }
 
-    function getSourceFile(fileName: string): SourceFile | undefined {
+    function getSourceFile(fileName: string): SourceFile | undefined {        
         return getSourceFileByPath(toPath(fileName));
     }
 
@@ -579,7 +612,7 @@ export function createProgram(rootNamesOrOptions: readonly string[] | CreateProg
      * @returns 
      */
     function getSourceFileWithoutReferences(fileName: string, isDefaultLib: boolean, reason: FileIncludeReason): SourceFile {
-        const sourceFileOptions = getCreateSourceFileOptions(fileName, isDefaultLib, /*moduleResolutionCache*/ undefined, host, options);
+        const sourceFileOptions = getCreateSourceFileOptions(fileName, isDefaultLib, /*moduleResolutionCache*/ undefined, host, options, configDefines);
         sourceFileOptions.reportParsedDefines = true;
         const file = host.getSourceFile(
             fileName,
@@ -618,22 +651,20 @@ export function createProgram(rootNamesOrOptions: readonly string[] | CreateProg
 
     function getResolvedModule(file: SourceFile, moduleName: string, mode: ResolutionMode) {        
         Debug.assertIsDefined(file);
-        return moduleName ? resolvedModules?.get(file.path)?.get(getNormalizedModuleName(moduleName), mode) : undefined;
+        return moduleName ? resolvedModules?.get(file.path)?.get(getNormalizedModuleName(moduleName), mode) : undefined;        
     }
 
     function getProgramDiagnostics(sourceFile: SourceFile): readonly Diagnostic[] {
-        // if (skipTypeChecking(sourceFile, options, program)) {
-        //     return emptyArray;
-        // }
+        if (skipTypeChecking(sourceFile, options, program)) {
+            return emptyArray;
+        }
 
         const programDiagnosticsInFile = updateAndGetProgramDiagnostics().getDiagnostics(sourceFile.fileName);
-        // if (!sourceFile.commentDirectives?.length) {
-        //     return programDiagnosticsInFile;
-        // }
+        if (!sourceFile.commentDirectives?.length) {
+            return programDiagnosticsInFile;
+        }
 
-        // TODO 
-        //return getDiagnosticsWithPrecedingDirectives(sourceFile, sourceFile.commentDirectives, programDiagnosticsInFile).diagnostics;
-        return programDiagnosticsInFile;
+        return getDiagnosticsWithPrecedingDirectives(sourceFile, sourceFile.commentDirectives, programDiagnosticsInFile).diagnostics;        
     }
 
     function pathForLibFile(libFileName: string): string {
@@ -693,11 +724,16 @@ export function createProgram(rootNamesOrOptions: readonly string[] | CreateProg
     
     function getBindAndCheckDiagnosticsForFileNoCache(sourceFile: SourceFile, cancellationToken: CancellationToken | undefined): readonly Diagnostic[] {
         return runWithCancellationToken(() => {
-            // if (skipTypeChecking(sourceFile, options, program)) {
-            //     return emptyArray;
-            // }
+            if (skipTypeChecking(sourceFile, options, program)) {
+                return emptyArray;
+            }
 
-            const typeChecker = getTypeChecker();
+            const typeChecker = getTypeChecker();            
+            
+            // bind file if needed
+            if (!sourceFile.bindDiagnostics) {
+                bindSourceFile(sourceFile, program.getCompilerOptions());
+            }
 
             Debug.assert(!!sourceFile.bindDiagnostics);
 
@@ -714,26 +750,68 @@ export function createProgram(rootNamesOrOptions: readonly string[] | CreateProg
             //     checkDiagnostics = filter(checkDiagnostics, d => plainJSErrors.has(d.code));
             // }
             // skip ts-expect-error errors in plain JS files, and skip JSDoc errors except in checked JS
-            return getMergedBindAndCheckDiagnostics(sourceFile, !isNotLpc, bindDiagnostics, checkDiagnostics, /*isCheckJs ? sourceFile.jsDocDiagnostics :*/ undefined);
+            return getMergedBindAndCheckDiagnostics(sourceFile, !isNotLpc, bindDiagnostics, checkDiagnostics, sourceFile.jsDocDiagnostics);
         });
     }
 
     function getMergedBindAndCheckDiagnostics(sourceFile: SourceFile, includeBindAndCheckDiagnostics: boolean, ...allDiagnostics: (readonly Diagnostic[] | undefined)[]) {
         const flatDiagnostics = flatten(allDiagnostics);
-        if (!includeBindAndCheckDiagnostics /*|| !sourceFile.commentDirectives?.length*/) {
+        if (!includeBindAndCheckDiagnostics || !sourceFile.commentDirectives?.length) {
             return flatDiagnostics;
         }
 
-        // const { diagnostics, directives } = getDiagnosticsWithPrecedingDirectives(sourceFile, sourceFile.commentDirectives, flatDiagnostics);
+        const { diagnostics, directives } = getDiagnosticsWithPrecedingDirectives(sourceFile, sourceFile.commentDirectives, flatDiagnostics);
 
-        // for (const errorExpectation of directives.getUnusedExpectations()) {
-        //     diagnostics.push(createDiagnosticForRange(sourceFile, errorExpectation.range, Diagnostics.Unused_ts_expect_error_directive));
-        // }
+        for (const errorExpectation of directives.getUnusedExpectations()) {
+            diagnostics.push(createDiagnosticForRange(sourceFile, errorExpectation.range, Diagnostics.Unused_lpc_expect_error_directive));
+        }
 
-        // return diagnostics;
-        return flatDiagnostics;
+        return diagnostics;        
     }
 
+    /**
+     * Creates a map of comment directives along with the diagnostics immediately preceded by one of them.
+     * Comments that match to any of those diagnostics are marked as used.
+     */
+    function getDiagnosticsWithPrecedingDirectives(sourceFile: SourceFile, commentDirectives: CommentDirective[], flatDiagnostics: Diagnostic[]) {
+        // Diagnostics are only reported if there is no comment directive preceding them
+        // This will modify the directives map by marking "used" ones with a corresponding diagnostic
+        const directives = createCommentDirectivesMap(sourceFile, commentDirectives);
+        const diagnostics = flatDiagnostics.filter(diagnostic => markPrecedingCommentDirectiveLine(diagnostic, directives) === -1);
+
+        return { diagnostics, directives };
+    }
+
+    /**
+     * @returns The line index marked as preceding the diagnostic, or -1 if none was.
+     */
+    function markPrecedingCommentDirectiveLine(diagnostic: Diagnostic, directives: CommentDirectivesMap) {
+        const { file, start } = diagnostic;
+        if (!file) {
+            return -1;
+        }
+
+        // Start out with the line just before the text
+        const lineStarts = getLineStarts(file);
+        let line = computeLineAndCharacterOfPosition(lineStarts, start!).line - 1; // TODO: GH#18217
+        while (line >= 0) {
+            // As soon as that line is known to have a comment directive, use that
+            if (directives.markUsed(line)) {
+                return line;
+            }
+
+            // Stop searching if the line is not empty and not a comment
+            const lineText = file.text.slice(lineStarts[line], lineStarts[line + 1]).trim();
+            if (lineText !== "" && !/^(\s*)\/\/(.*)$/.test(lineText)) {
+                return -1;
+            }
+
+            line--;
+        }
+
+        return -1;
+    }
+    
     function getAndCacheDiagnostics<T extends SourceFile | undefined, U extends Diagnostic>(
         sourceFile: T,
         cancellationToken: CancellationToken | undefined,
@@ -888,12 +966,11 @@ export function createProgram(rootNamesOrOptions: readonly string[] | CreateProg
                     message = Diagnostics.File_is_matched_by_files_list_specified_here;
                     break;
                 }
-                console.debug("todo - matchedByFiles");
-                // const matchedByInclude = getMatchedIncludeSpec(program, fileName);
-                // // Could be additional files specified as roots
-                // if (!matchedByInclude || !isString(matchedByInclude)) return undefined;
-                // configFileNode = getTsConfigPropArrayElementValue(options.configFile, "include", matchedByInclude);
-                // message = Diagnostics.File_is_matched_by_include_pattern_specified_here;
+                const matchedByInclude = getMatchedIncludeSpec(program, fileName);
+                // Could be additional files specified as roots
+                if (!matchedByInclude || !isString(matchedByInclude)) return undefined;
+                configFileNode = getLpcConfigPropArrayElementValue(options.configFile, "include", matchedByInclude);
+                message = Diagnostics.File_is_matched_by_include_pattern_specified_here;
                 break;
             case FileIncludeKind.SourceFromProjectReference:
             case FileIncludeKind.OutputFromProjectReference:
@@ -1291,7 +1368,7 @@ export function createProgram(rootNamesOrOptions: readonly string[] | CreateProg
         // }
 
         // We haven't looked for this file, do so now and cache result
-        const sourceFileOptions = getCreateSourceFileOptions(fileName, isDefaultLib, /*moduleResolutionCache*/ undefined, host, options);
+        const sourceFileOptions = getCreateSourceFileOptions(fileName, isDefaultLib, /*moduleResolutionCache*/ undefined, host, options, configDefines);
         const file = host.getSourceFile(
             fileName,
             sourceFileOptions,
@@ -1343,7 +1420,7 @@ export function createProgram(rootNamesOrOptions: readonly string[] | CreateProg
                 }
             }
 
-            //skipDefaultLib = skipDefaultLib || (file.hasNoDefaultLib && !ignoreNoDefaultLib);
+            skipDefaultLib = skipDefaultLib || (file.hasNoDefaultLib && !ignoreNoDefaultLib);
 
             if (!options.noResolve) {
                 processReferencedFiles(file, isDefaultLib);
@@ -1378,7 +1455,7 @@ export function createProgram(rootNamesOrOptions: readonly string[] | CreateProg
         }
     }
     
-    function getSourceFileByPath(path: Path): SourceFile | undefined {
+    function getSourceFileByPath(path: Path): SourceFile | undefined {        
         return filesByName.get(path) || undefined;
     }
 
@@ -1397,13 +1474,14 @@ export function createProgram(rootNamesOrOptions: readonly string[] | CreateProg
         return result;
     }
 
-    function getCreateSourceFileOptions(fileName: string, isDefaultLib: boolean, moduleResolutionCache: any | undefined, host: CompilerHost, options: CompilerOptions): CreateSourceFileOptions {
+    function getCreateSourceFileOptions(fileName: string, isDefaultLib: boolean, moduleResolutionCache: any | undefined, host: CompilerHost, options: CompilerOptions, configDefines: ReadonlyMap<string,string>): CreateSourceFileOptions {
         // TODO is this complete?        
         return {
             languageVersion: ScriptTarget.Latest,
-            globalIncludes: (isDefaultLib ? undefined : options.globalIncludeFiles) || emptyArray,
-            fileHandler: fileHandler,
-            configDefines: getConfigDefines(options),
+            // don't pass global include if this is a lib dir, or the filename is one of the global includes
+            globalIncludes: (isDefaultLib || options.resolvedGlobalIncludeFiles?.some(gi => gi == fileName) ? undefined : options.globalIncludeFiles) || emptyArray,
+            fileHandler,
+            configDefines,
         };
         
         // It's a _little odd_ that we can't set `impliedNodeFormat` until the program step - but it's the first and only time we have a resolution cache
@@ -1550,7 +1628,7 @@ export function createProgram(rootNamesOrOptions: readonly string[] | CreateProg
             const resolutionsInFile = createModeAwareCache<ResolutionWithFailedLookupLocations>();
             (resolvedModules ??= new Map()).set(file.path, resolutionsInFile);
             for (let index = 0; index < moduleNames.length; index++) {
-                if (!resolutions[index]) continue;
+                if (!resolutions[index] || !moduleNames[index]?.text) continue;
                 const resolution = resolutions[index].resolvedModule;
                 const moduleName = getNormalizedModuleName(moduleNames[index].text);
                 const mode: ResolutionMode = ModuleKind.LPC;// getModeForUsageLocationWorker(file, moduleNames[index], optionsForFile);
@@ -1591,6 +1669,9 @@ export function createProgram(rootNamesOrOptions: readonly string[] | CreateProg
                     modulesWithElidedImports.set(file.path, true);
                 }
                 else if (shouldAddFile) {
+                    // mark module as parseable, if parseable files are being used
+                    parseableFiles?.add(toPath(resolvedFileName));
+                    
                     findSourceFile(
                         resolvedFileName,
                         /*isDefaultLib*/ false,
@@ -1752,13 +1833,14 @@ export function createProgram(rootNamesOrOptions: readonly string[] | CreateProg
     }
 
     function collectExternalModuleReferences(file: SourceFile): void {
-        // if (file.imports) {
-        //     return;
-        // }
+        if (file.imports) {
+            return;
+        }
 
         const isExternalModuleFile = isExternalModule(file);
 
         // file.imports may not be undefined if there exists dynamic import
+        const seenImports = new Set<string>();
         let imports: StringLiteral[] | undefined;
         let moduleAugmentations: (StringLiteral | Identifier)[] | undefined;
         let ambientModules: string[] | undefined;
@@ -1780,50 +1862,50 @@ export function createProgram(rootNamesOrOptions: readonly string[] | CreateProg
         //     }
         // }
 
-        const toPragmas = file.pragmas?.get("this-object");
+        const toPragmas = file.pragmas?.get("this-object") ?? file.pragmas?.get("this_object");
         if (toPragmas) {
             const stringLiteral = thisObjectPragmaToStringLiteral(file, toPragmas);
             if (stringLiteral && stringLiteral.text?.length) {
                 imports = append(imports, stringLiteral);
             }
         }
-
-        for (const node of file.statements) {
-            collectModuleReferences(file, node, /*inAmbientModule*/ false);
-        }
-
-        // TODO - adjust parser to add jssdoc nodes to importCandidates
+        
         for (const node of file.importCandidates) {
             collectModuleReferences(file, node, /*inAmbientModule*/ false);
         }
  
         collectDynamicImportOrRequireOrJsDocImportCalls(file);        
 
-        if (file.imports?.length > 0) {
-            file.imports = [...file.imports, ...(imports || emptyArray)];
-        } else {
-            file.imports = imports || emptyArray;
-        }
+        file.imports = imports || emptyArray;        
         
         //file.moduleAugmentations = moduleAugmentations || emptyArray;
         file.ambientModuleNames = ambientModules || emptyArray;
 
-        return;
+        return;        
 
+        // this will do its best to dedupe the imports
+        function pushIfNotSeen(moduleName: StringLiteral): void {
+            if (!seenImports.has(moduleName.text)) {
+                seenImports.add(moduleName.text);
+                imports = append(imports, moduleName);
+            }
+        }
+        
         function collectModuleReferences(file: SourceFile, node: Node, inAmbientModule: boolean): void {            
             if (isCloneObjectExpression(node) && node.arguments?.length >= 1 && isStringLiteral(node.arguments[0])) {
-                setParentRecursive(node, /*incremental*/ false); // we need parent data on imports before the program is fully bound, so we ensure it's set here
-                imports = append(imports, node.arguments[0]);
+                setParentRecursive(node, /*incremental*/ false); // we need parent data on imports before the program is fully bound, so we ensure it's set here                
+                pushIfNotSeen(node.arguments[0]);                
             } else if (isInheritDeclaration(node)) {
                 if (isStringLiteral(node.inheritClause)) {
                     setParentRecursive(node, /*incremental*/ false); // we need parent data on imports before the program is fully bound, so we ensure it's set here
-                    imports = append(imports, node.inheritClause);
+                    pushIfNotSeen(node.inheritClause);                    
                 } else {
                     // do a quick traversal to join strings together
                     const parts = getStringLiteralsTextRecursively(node.inheritClause);                                                
                     const lit = factory.createStringLiteral(parts.join(""));
+                    (lit as Mutable<Node>).flags &= ~NodeFlags.Synthesized;
                     setTextRange(lit, node.inheritClause); // copy the text range
-                    imports = append(imports, lit);
+                    pushIfNotSeen(lit);                    
                 }
             } else if (isIncludeDirective(node)) {
                 // imports have string nodes, but we want to use the resolved filename
@@ -1831,65 +1913,80 @@ export function createProgram(rootNamesOrOptions: readonly string[] | CreateProg
                 if (node.fileName) {
                     const lit = factory.createStringLiteral(node.fileName);
                     setTextRangePosEnd(lit, node.content.pos, node.content.end);
+                    (lit as Mutable<Node>).flags &= ~NodeFlags.Synthesized;
                     (lit as Mutable<Node>).parent = node; // it will need a parent so that it doesn't break the emitter
-                    imports = append(imports, lit);
+                    pushIfNotSeen(lit);
                 }                
-            } else if (isJSDocNode(node)) {                    
-                if ((isJSDocParameterTag(node) || isJSDocVariableTag(node) || isJSDocTypeTag(node) || isJSDocPropertyTag(node) || isJSDocReturnTag(node)) && node.typeExpression) { 
-                    const typeExp = node.typeExpression;
-                    const jsDocType = typeExp.type && isTypePredicateNode(typeExp.type) ? typeExp.type.type : typeExp.type;
-                    if (jsDocType) {
-                        const docTypeLiteral = isLiteralTypeNode(jsDocType) ? jsDocType.literal : isArrayTypeNode(jsDocType) && jsDocType.elementType && isLiteralTypeNode(jsDocType.elementType) ? jsDocType.elementType.literal : undefined;
-                        if (docTypeLiteral && isStringLiteral(docTypeLiteral)) {
-                            imports = append(imports, docTypeLiteral);
-                        } else if (docTypeLiteral && isBinaryExpression(docTypeLiteral)) {
-                            const parts = getStringLiteralsTextRecursively(docTypeLiteral);
+            } else if (isJsDocImportCandidate(node)) {  
+                const typeExp = node.typeExpression;
+                const jsDocType = typeExp ? isJSDocTypeLiteral(typeExp) ? typeExp : typeExp.type && isTypePredicateNode(typeExp.type) ? typeExp.type.type : typeExp.type : undefined;
+                if (jsDocType) {                        
+                    const docTypeLiterals = getStringLiteralsFromTypeNodes(jsDocType) || emptyArray;
+                    forEach(docTypeLiterals, lit => {
+                        if (isStringLiteral(lit)) {
+                            pushIfNotSeen(lit);
+                        } else if (isBinaryExpression(lit)) {
+                            const parts = getStringLiteralsTextRecursively(lit);
                             if (parts.length) {                       
                                 const lit = factory.createStringLiteral(parts.join(""));
+                                (lit as Mutable<Node>).flags &= ~NodeFlags.Synthesized;
                                 (lit as Mutable<Node>).parent = node; // it will need a parent so that it doesn't break the emitter
-                                imports = append(imports, lit);
+                                pushIfNotSeen(lit);                                
                             }   
-                        }                        
-                    }                                                
-                } 
+                        }
+                    });                                          
+                }                                                
             } else if (isPropertyAccessExpression(node)) {                    
                 const parts = getStringLiteralsTextRecursively(node.expression);
                 
                 if (parts.length) {                       
                     const lit = factory.createStringLiteral(parts.join(""));
+                    (lit as Mutable<Node>).flags &= ~NodeFlags.Synthesized;
                     (lit as Mutable<Node>).parent = node; // it will need a parent so that it doesn't break the emitter
-                    imports = append(imports, lit);
+                    pushIfNotSeen(lit);
                 }                    
             } else if (isNewExpression(node) && !node.expression && node.arguments?.length) {
                 const newArg = first(node.arguments);
                 const parts = getStringLiteralsTextRecursively(newArg);
                 if (parts.length) {                       
                     const lit = factory.createStringLiteral(parts.join(""));
+                    (lit as Mutable<Node>).flags &= ~NodeFlags.Synthesized;
                     (lit as Mutable<Node>).parent = node; // it will need a parent so that it doesn't break the emitter
-                    imports = append(imports, lit);
+                    pushIfNotSeen(lit);
                 }
             } else if (isCallExpression(node) && isIdentifier(node.expression) && node.expression.text === "base_name") {
                 // the base_name efun should add the file's own name to the imports
                 const baseName = getLibRootedFileName(file.fileName, options);                                    
                 const lit = factory.createStringLiteral(baseName);
+                (lit as Mutable<Node>).flags &= ~NodeFlags.Synthesized;
                 (lit as Mutable<Node>).parent = node; // it will need a parent so that it doesn't break the emitter
-                imports = append(imports, lit);                
+                pushIfNotSeen(lit);
+            } else if (isNamedObjectTypeNode(node) && node.name) {
+                const parts = getStringLiteralsTextRecursively(node.name);
+                if (parts.length) {                       
+                    const lit = factory.createStringLiteral(parts.join(""));
+                    (lit as Mutable<Node>).flags &= ~NodeFlags.Synthesized;
+                    (lit as Mutable<Node>).parent = node; // it will need a parent so that it doesn't break the emitter
+                    pushIfNotSeen(lit);
+                }
             }
         }
                     
-        function getStringLiteralsTextRecursively(node: Node): string[] {
-            // do a quick traversal to join strings together
-            const parts: string[] = [];
-            
-            if (isStringLiteral(node)) parts.push(node.text);
-            forEachChildRecursively(node, n => {
-                if (isStringLiteral(n)) {
-                    parts.push(n.text);
-                }
-            });
+        function getStringLiteralsFromTypeNodes(jsDocType: TypeNode): Array<StringLiteral|BinaryExpression> | undefined {
+            if (isLiteralTypeNode(jsDocType) && isStringLiteral(jsDocType.literal)) {
+                return [jsDocType.literal];
+            } else if (isLiteralTypeNode(jsDocType) && isBinaryExpression(jsDocType.literal)) {
+                return [jsDocType.literal]; 
+            } else if ((isUnionTypeNode(jsDocType) || isIntersectionTypeNode(jsDocType)) && jsDocType.types.length) {
+                return flatMap(jsDocType.types, getStringLiteralsFromTypeNodes) as Array<StringLiteral|BinaryExpression>;            
+            } else if (isArrayTypeNode(jsDocType) && jsDocType.elementType) {
+                return getStringLiteralsFromTypeNodes(jsDocType.elementType);
+            }
 
-            return parts;
+            return undefined;
         }
+        
+        
 
         function collectDynamicImportOrRequireOrJsDocImportCalls(file: SourceFile) {
             // const r = /\@(?:param|type|return[s]?)/g;
@@ -1914,15 +2011,15 @@ export function createProgram(rootNamesOrOptions: readonly string[] | CreateProg
             // }
         }
 
-        function isSameFileNameOrjsDoc(sourceFile: SourceFile, node: Node): boolean {
-            return node.originFilename === sourceFile.fileName || isJSDocNode(node);
+        function isSameFileNameOrjsDoc(node: Node): boolean {
+            return !isInExternalFileContext(node) || isJSDocNode(node);
         }
 
         /** Returns a token if position is in [start-of-leading-trivia, end), includes JSDoc only in JS files */
         function getNodeAtPosition(sourceFile: SourceFile, position: number): Node {
             let current: Node = sourceFile;
             const getContainingChild = (child: Node) => {
-                if (isSameFileNameOrjsDoc(sourceFile, child) && child.pos <= position && (position < child.end || (position === child.end && (child.kind === SyntaxKind.EndOfFileToken)))) {
+                if (isSameFileNameOrjsDoc(child) && child.pos <= position && (position < child.end || (position === child.end && (child.kind === SyntaxKind.EndOfFileToken)))) {
                     return child;
                 }
             };
@@ -2056,6 +2153,11 @@ export function createProgram(rootNamesOrOptions: readonly string[] | CreateProg
             return StructureIsReused.Not;
         }
 
+        // is the set of parsable files has changed, we cant reuse the structure
+        const oldParsedNamed = oldProgram.getParseableFiles();
+        if (parseableFiles.size != oldParsedNamed.size) {
+            return StructureIsReused.Not;
+        }
 
         // Check if any referenced project tsconfig files are different
         if (!canReuseProjectReferences()) {
@@ -2085,7 +2187,7 @@ export function createProgram(rootNamesOrOptions: readonly string[] | CreateProg
         const seenPackageNames = new Map<string, SeenPackageName>();
         
         for (const oldSourceFile of oldSourceFiles) {
-            const sourceFileOptions = getCreateSourceFileOptions(oldSourceFile.fileName, false, moduleResolutionCache, host, options);
+            const sourceFileOptions = getCreateSourceFileOptions(oldSourceFile.fileName, false, moduleResolutionCache, host, options, oldProgram.getConfigDefines());            
             let newSourceFile = host.getSourceFileByPath
                 ? host.getSourceFileByPath(oldSourceFile.fileName, oldSourceFile.resolvedPath, sourceFileOptions, /*onError*/ undefined, shouldCreateNewSourceFile)
                 : host.getSourceFile(oldSourceFile.fileName, sourceFileOptions, /*onError*/ undefined, shouldCreateNewSourceFile); // TODO: GH#18217
@@ -2286,6 +2388,7 @@ export function createProgram(rootNamesOrOptions: readonly string[] | CreateProg
         // resolvedTypeReferenceDirectiveNames = oldProgram.resolvedTypeReferenceDirectiveNames;
         resolvedLibReferences = oldProgram.resolvedLibReferences;
         packageMap = oldProgram.getCurrentPackagesMap();
+        configDefines = oldProgram.getConfigDefines();
 
         return StructureIsReused.Completely;
     }
@@ -2317,7 +2420,7 @@ export function createCompilerHostWorker(
     system: System = sys,
 ): CompilerHost {
     // const existingDirectories = new Map<string, boolean>();
-    const getCanonicalFileName = createGetCanonicalFileName(true);//system.useCaseSensitiveFileNames);
+    const getCanonicalFileName = createGetCanonicalFileName(system.useCaseSensitiveFileNames);
     // function directoryExists(directoryPath: string): boolean {
     //     if (existingDirectories.has(directoryPath)) {
     //         return true;
@@ -2332,15 +2435,14 @@ export function createCompilerHostWorker(
     function getDefaultLibLocation(): string {
         return getDirectoryPath(normalizePath(system.getExecutingFilePath()));
     }
-    
-    
+                
     const newLine = getNewLineCharacter(options);
     const realpath = system.realpath && ((path: string) => system.realpath!(path));    
     
     const compilerHost: CompilerHost = {
         getSourceFile: createGetSourceFile(fileName => compilerHost.readFile(fileName), setParentNodes, options.driverType),
         getDefaultLibLocation,
-        getDefaultLibFileName: options => combinePaths(getDefaultLibLocation(), getDefaultLibFileName(options)),
+        getDefaultLibFileName: options => tryGetLocalizedLibPath(options),
         getSourceTextFromSnapshot: fileName => system.readFile(fileName),
         writeFile: createWriteFileMeasuringIO(
             (path, data, writeByteOrderMark) => system.writeFile(path, data, writeByteOrderMark),
@@ -2361,6 +2463,8 @@ export function createCompilerHostWorker(
         readDirectory: (path, extensions, include, exclude, depth) => system.readDirectory(path, extensions, include, exclude, depth),
         createDirectory: d => system.createDirectory(d),
         createHash: maybeBind(system, system.createHash),
+        onAllFilesNeedReparse: (fileNames: string[]) => noop,        
+        getParseableFiles: () => undefined,
     };
     return compilerHost;
 }
@@ -2489,8 +2593,12 @@ function shouldProgramCreateNewSourceFiles(program: Program | undefined, newOpti
     if (!program) return false;
     // If any compiler options change, we can't reuse old source file even if version match
     // The change in options like these could result in change in syntax tree or `sourceFile.bindDiagnostics`.
-    return optionsHaveChanges(program.getCompilerOptions(), newOptions, sourceFileAffectingCompilerOptions);
+    const oldOptions = program.getCompilerOptions();
+    return optionsHaveChanges(oldOptions, newOptions, sourceFileAffectingCompilerOptions) || 
+        changesAffectLibCompilation(oldOptions, newOptions);
 }
+
+
 
 /** @internal */
 export function forEachResolvedProjectReference<T>(
@@ -2935,7 +3043,7 @@ export interface FormatDiagnosticsHost {
 
 
 export function formatDiagnostic(diagnostic: Diagnostic, host: FormatDiagnosticsHost): string {
-    const errorMessage = `${diagnosticCategoryName(diagnostic)} TS${diagnostic.code}: ${flattenDiagnosticMessageText(diagnostic.messageText, host.getNewLine())}${host.getNewLine()}`;
+    const errorMessage = `${diagnosticCategoryName(diagnostic)} LPC${diagnostic.code}: ${flattenDiagnosticMessageText(diagnostic.messageText, host.getNewLine())}${host.getNewLine()}`;
 
     if (diagnostic.file) {
         const { line, character } = getLineAndCharacterOfPosition(diagnostic.file, diagnostic.start!); // TODO: GH#18217
@@ -2954,6 +3062,7 @@ export enum ForegroundColorEscapeSequences {
     Yellow = "\u001b[93m",
     Blue = "\u001b[94m",
     Cyan = "\u001b[96m",
+    Green = "\u001b[92m",
 }
 const gutterStyleSequence = "\u001b[7m";
 const gutterSeparator = " ";
@@ -2961,6 +3070,19 @@ const resetEscapeSequence = "\u001b[0m";
 const ellipsis = "...";
 const halfIndent = "  ";
 const indent = "    ";
+function getCategoryFormat(category: DiagnosticCategory): ForegroundColorEscapeSequences {
+    switch (category) {
+        case DiagnosticCategory.Error:
+            return ForegroundColorEscapeSequences.Red;
+        case DiagnosticCategory.Warning:
+            return ForegroundColorEscapeSequences.Yellow;
+        case DiagnosticCategory.Suggestion:
+            return Debug.fail("Should never get an Info diagnostic on the command line.");
+        case DiagnosticCategory.Message:
+            return ForegroundColorEscapeSequences.Blue;
+    }
+}
+
 
 /** @internal */
 export function formatColorAndReset(text: string, formatStyle: string) {
@@ -3000,18 +3122,28 @@ export function isProgramUptoDate(
     hasChangedAutomaticTypeDirectiveNames: HasChangedAutomaticTypeDirectiveNames | undefined,
     getParsedCommandLine: (fileName: string) => ParsedCommandLine | undefined,
     projectReferences: readonly ProjectReference[] | undefined,
+    parseableFilePaths: ReadonlySet<Path>
 ): boolean {
     // If we haven't created a program yet or have changed automatic type directives, then it is not up-to-date
     if (!program || hasChangedAutomaticTypeDirectiveNames?.()) return false;
 
     // If root file names don't match
     if (!arrayIsEqualTo(program.getRootFileNames(), rootFileNames)) return false;
+    
+    // quick check to see if size of parseable files has changed
+    if (parseableFilePaths?.size !== program.getParseableFiles()?.size) return false;
+    // check if any parseable files do not have valid sourcefiles yet
+    let needsToParseNewFiles = false;
+    parseableFilePaths.forEach(path => {
+        needsToParseNewFiles ||= !program.getSourceFileByPath(path);
+    });
+    if (needsToParseNewFiles) return false;
 
     let seenResolvedRefs: ResolvedProjectReference[] | undefined;
 
     // If project references don't match
     if (!arrayIsEqualTo(program.getProjectReferences(), projectReferences, projectReferenceUptoDate)) return false;
-
+        
     // If any file is not up-to-date, then the whole program is not up-to-date
     if (program.getSourceFiles().some(sourceFileNotUptoDate)) return false;
 
@@ -3077,3 +3209,127 @@ export function isProgramUptoDate(
     }
 }
 
+export function findConfigFile(searchPath: string, fileExists: (fileName: string) => boolean, configName = "lpc-config.json"): string | undefined {    
+    return forEachAncestorDirectory(searchPath, ancestor => {
+        const fileName = combinePaths(ancestor, configName);
+        console.log(`Checking for ${fileName}`);
+        return fileExists(fileName) ? fileName : undefined;
+    });
+}
+
+
+/** @internal */
+export function formatLocation(file: SourceFileBase, start: number, host: FormatDiagnosticsHost, color = formatColorAndReset) {
+    const { line: firstLine, character: firstLineChar } = getLineAndCharacterOfPosition(file, start); // TODO: GH#18217
+    const relativeFileName = host ? convertToRelativePath(file.fileName, host.getCurrentDirectory(), fileName => host.getCanonicalFileName(fileName)) : file.fileName;
+
+    let output = "";
+    output += color(relativeFileName, ForegroundColorEscapeSequences.Cyan);
+    output += ":";
+    output += color(`${firstLine + 1}`, ForegroundColorEscapeSequences.Yellow);
+    output += ":";
+    output += color(`${firstLineChar + 1}`, ForegroundColorEscapeSequences.Yellow);
+    return output;
+}
+
+export function formatDiagnosticsWithColorAndContext(diagnostics: readonly Diagnostic[], host: FormatDiagnosticsHost): string {
+    let output = "";
+    for (const diagnostic of diagnostics) {
+        if (diagnostic.file) {
+            const { file, start } = diagnostic;
+            output += formatLocation(file, start!, host); // TODO: GH#18217
+            output += " - ";
+        }
+
+        output += formatColorAndReset(diagnosticCategoryName(diagnostic), getCategoryFormat(diagnostic.category));
+        output += formatColorAndReset(` ${diagnosticPrefix}${diagnostic.code}: `, ForegroundColorEscapeSequences.Grey);
+        output += flattenDiagnosticMessageText(diagnostic.messageText, host.getNewLine());
+
+        if (diagnostic.file && diagnostic.code !== Diagnostics.File_appears_to_be_binary.code) {
+            output += host.getNewLine();
+            output += formatCodeSpan(diagnostic.file, diagnostic.start!, diagnostic.length!, "", getCategoryFormat(diagnostic.category), host); // TODO: GH#18217
+        }
+        if (diagnostic.relatedInformation) {
+            output += host.getNewLine();
+            for (const { file, start, length, messageText } of diagnostic.relatedInformation) {
+                if (file) {
+                    output += host.getNewLine();
+                    output += halfIndent + formatLocation(file, start!, host); // TODO: GH#18217
+                    output += formatCodeSpan(file, start!, length!, indent, ForegroundColorEscapeSequences.Cyan, host); // TODO: GH#18217
+                }
+                output += host.getNewLine();
+                output += indent + flattenDiagnosticMessageText(messageText, host.getNewLine());
+            }
+        }
+        output += host.getNewLine();
+    }
+    return output;
+}
+
+function formatCodeSpan(file: SourceFileBase, start: number, length: number, indent: string, squiggleColor: ForegroundColorEscapeSequences, host: FormatDiagnosticsHost) {
+    const { line: firstLine, character: firstLineChar } = getLineAndCharacterOfPosition(file, start);
+    const { line: lastLine, character: lastLineChar } = getLineAndCharacterOfPosition(file, start + length);
+    const lastLineInFile = getLineAndCharacterOfPosition(file, file.text.length).line;
+
+    const hasMoreThanFiveLines = (lastLine - firstLine) >= 4;
+    let gutterWidth = (lastLine + 1 + "").length;
+    if (hasMoreThanFiveLines) {
+        gutterWidth = Math.max(ellipsis.length, gutterWidth);
+    }
+
+    let context = "";
+    for (let i = firstLine; i <= lastLine; i++) {
+        context += host.getNewLine();
+        // If the error spans over 5 lines, we'll only show the first 2 and last 2 lines,
+        // so we'll skip ahead to the second-to-last line.
+        if (hasMoreThanFiveLines && firstLine + 1 < i && i < lastLine - 1) {
+            context += indent + formatColorAndReset(ellipsis.padStart(gutterWidth), gutterStyleSequence) + gutterSeparator + host.getNewLine();
+            i = lastLine - 1;
+        }
+
+        const lineStart = getPositionOfLineAndCharacter(file, i, 0);
+        const lineEnd = i < lastLineInFile ? getPositionOfLineAndCharacter(file, i + 1, 0) : file.text.length;
+        let lineContent = file.text.slice(lineStart, lineEnd);
+        lineContent = lineContent.trimEnd(); // trim from end
+        lineContent = lineContent.replace(/\t/g, " "); // convert tabs to single spaces
+
+        // Output the gutter and the actual contents of the line.
+        context += indent + formatColorAndReset((i + 1 + "").padStart(gutterWidth), gutterStyleSequence) + gutterSeparator;
+        context += lineContent + host.getNewLine();
+
+        // Output the gutter and the error span for the line using tildes.
+        context += indent + formatColorAndReset("".padStart(gutterWidth), gutterStyleSequence) + gutterSeparator;
+        context += squiggleColor;
+        if (i === firstLine) {
+            // If we're on the last line, then limit it to the last character of the last line.
+            // Otherwise, we'll just squiggle the rest of the line, giving 'slice' no end position.
+            const lastCharForLine = i === lastLine ? lastLineChar : undefined;
+
+            context += lineContent.slice(0, firstLineChar).replace(/\S/g, " ");
+            context += lineContent.slice(firstLineChar, lastCharForLine).replace(/./g, "~");
+        }
+        else if (i === lastLine) {
+            context += lineContent.slice(0, lastLineChar).replace(/./g, "~");
+        }
+        else {
+            // Squiggle the entire line.
+            context += lineContent.replace(/./g, "~");
+        }
+        context += resetEscapeSequence;
+    }
+    return context;
+}
+
+function isJsDocImportCandidate(node: Node): node is JSDocImportCandidateNode {
+    switch (node.kind) {
+        case SyntaxKind.JSDocParameterTag:
+        case SyntaxKind.JSDocPropertyTag:
+        case SyntaxKind.JSDocTypedefTag:
+        case SyntaxKind.JSDocTypeTag:
+        case SyntaxKind.JSDocVariableTag:
+        case SyntaxKind.JSDocReturnTag:            
+            return true;
+        default:
+            return false;
+    }
+}

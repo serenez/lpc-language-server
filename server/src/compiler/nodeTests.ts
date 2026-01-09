@@ -1,4 +1,4 @@
-import { ArrayBindingPattern, ArrayLiteralExpression, ArrayTypeNode, ArrowFunction, BinaryExpression, BindingElement, Block, CallExpression, CallSignatureDeclaration, CaseBlock, CaseClause, CaseKeyword, ClassDeclaration, ClassExpression, CloneObjectExpression, ComputedPropertyName, ConditionalTypeNode, DefaultClause, DefineDirective, ElementAccessExpression, EmptyStatement, ExpressionStatement, ExpressionWithTypeArguments, FloatLiteral, ForStatement, FunctionDeclaration, FunctionExpression, FunctionTypeNode, Identifier, IfStatement, IncludeDirective, IndexedAccessTypeNode, InheritDeclaration, InlineClosureExpression, InterfaceDeclaration, IntLiteral, JSDoc, JSDocAllType, JSDocCallbackTag, JSDocClassTag, JSDocDeprecatedTag, JSDocFunctionType, JSDocImplementsTag, JSDocLink, JSDocLinkCode, JSDocLinkPlain, JSDocMemberName, JSDocNameReference, JSDocOptionalType, JSDocOverloadTag, JSDocParameterTag, JSDocPropertyTag, JSDocReturnTag, JSDocSatisfiesTag, JSDocSignature, JSDocTemplateTag, JSDocText, JSDocThisTag, JSDocThrowsTag, JSDocTypedefTag, JSDocTypeExpression, JSDocTypeLiteral, JSDocTypeTag, JSDocUnknownType, JSDocVariableTag, JSDocVariadicType, LabeledStatement, LiteralTypeNode, MethodDeclaration, NewExpression, Node, NodeFlags, ObjectLiteralExpression, OmittedExpression, ParameterDeclaration, ParenthesizedExpression, ParenthesizedTypeNode, PartiallyEmittedExpression, PrefixUnaryExpression, PropertyAccessExpression, PropertyAssignment, PropertyDeclaration, PropertySignature, QualifiedName, ShorthandPropertyAssignment, SourceFile, SpreadElement, StringLiteral, StructDeclaration, StructTypeNode, SuperAccessExpression, SwitchStatement, SyntaxKind, SyntaxList, ThisTypeNode, TupleTypeNode, TypeAliasDeclaration, TypeLiteralNode, TypeParameterDeclaration, TypePredicateNode, TypeReferenceNode, UnionTypeNode, VariableDeclaration, VariableDeclarationList, VariableStatement } from "./_namespaces/lpc";
+import { ArrayBindingPattern, ArrayLiteralExpression, ArrayTypeNode, ArrowFunction, BinaryExpression, BindingElement, Block, CallExpression, CallSignatureDeclaration, CaseBlock, CaseClause, CaseKeyword, CatchExpression, CatchStatement, ClassDeclaration, ClassExpression, CloneObjectExpression, ComputedPropertyName, ConditionalTypeNode, DefaultClause, DefineDirective, ElementAccessExpression, EmptyStatement, ExpressionStatement, ExpressionWithTypeArguments, FloatLiteral, ForStatement, FunctionDeclaration, FunctionExpression, FunctionTypeNode, Identifier, IfStatement, IncludeDirective, IndexedAccessTypeNode, InheritDeclaration, InlineClosureExpression, InterfaceDeclaration, IntersectionTypeNode, IntLiteral, JSDoc, JSDocAllType, JSDocCallbackTag, JSDocClassTag, JSDocDeprecatedTag, JSDocFunctionType, JSDocImplementsTag, JSDocLink, JSDocLinkCode, JSDocLinkPlain, JSDocMemberName, JSDocNameReference, JSDocOptionalType, JSDocOverloadTag, JSDocParameterTag, JSDocPropertyTag, JSDocReturnTag, JSDocSatisfiesTag, JSDocSignature, JSDocTemplateTag, JSDocText, JSDocThisTag, JSDocThrowsTag, JSDocTypedefTag, JSDocTypeExpression, JSDocTypeLiteral, JSDocTypeTag, JSDocUnknownType, JSDocVariableTag, JSDocVariadicType, LabeledStatement, LiteralTypeNode, MethodDeclaration, NamedObjectTypeNode, NewExpression, Node, NodeFlags, ObjectLiteralExpression, OmittedExpression, ParameterDeclaration, ParenthesizedExpression, ParenthesizedTypeNode, PartiallyEmittedExpression, PrefixUnaryExpression, PropertyAccessExpression, PropertyAssignment, PropertyDeclaration, PropertySignature, QualifiedName, ShorthandPropertyAssignment, SourceFile, SpreadElement, StringLiteral, StructDeclaration, StructTypeNode, SuperAccessExpression, SwitchStatement, SyntaxKind, SyntaxList, ThisTypeNode, TupleTypeNode, TypeAliasDeclaration, TypeLiteralNode, TypeParameterDeclaration, TypePredicateNode, TypeReferenceNode, UnionTypeNode, VariableDeclaration, VariableDeclarationList, VariableStatement } from "./_namespaces/lpc";
 
 export function isBinaryExpression(node: Node): node is BinaryExpression {
     return node.kind === SyntaxKind.BinaryExpression;
@@ -107,8 +107,16 @@ export function isArrayTypeNode(node: Node): node is ArrayTypeNode {
     return node.kind === SyntaxKind.ArrayType;
 }
 
+export function isNamedObjectTypeNode(node: Node): node is NamedObjectTypeNode {
+    return node.kind === SyntaxKind.NamedObjectType;
+}
+
 export function isUnionTypeNode(node: Node): node is UnionTypeNode {
     return node.kind === SyntaxKind.UnionType;
+}
+
+export function isIntersectionTypeNode(node: Node): node is IntersectionTypeNode {
+    return node.kind === SyntaxKind.IntersectionType;
 }
 
 // Top-level nodes
@@ -479,4 +487,16 @@ export function isInterfaceDeclaration(node: Node): node is InterfaceDeclaration
 
 export function isSuperAccessExpression(node: Node): node is SuperAccessExpression {
     return node.kind === SyntaxKind.SuperAccessExpression;
+}
+
+export function isCatchStatement(node: Node): node is CatchStatement {
+    return node.kind === SyntaxKind.CatchStatement;
+}
+
+export function isCatchExpression(node: Node): node is CatchExpression {
+    return node.kind === SyntaxKind.CatchExpression;
+}
+
+export function isJSDocCallbackTag(node: Node): node is JSDocCallbackTag {
+    return node.kind === SyntaxKind.JSDocCallbackTag;
 }

@@ -217,6 +217,12 @@ import {
     LeftHandSideExpression,
     isSyntaxList,
     isJSDocTypeAlias,
+    isParenthesizedExpression,
+    ParenthesizedExpression,
+    isJSDocNameReference,
+    isJSDocLinkLike,
+    isJSDocMemberName,
+    isStructTypeNode,
 } from "./_namespaces/lpc.js";
 
 // Matches the beginning of a triple slash directive
@@ -224,7 +230,7 @@ const tripleSlashDirectivePrefixRegex = /^\/\/\/\s*</;
 
 /** @internal */
 export function getNameFromPropertyName(
-    name: PropertyName
+    name: PropertyName | ParenthesizedExpression
 ): string | undefined {
     return name.kind === SyntaxKind.ComputedPropertyName
         // treat computed property names where expression is string/numeric literal as just string/numeric literal
@@ -410,8 +416,8 @@ function getDisplayPartWriter(): DisplayPartsSymbolWriter {
     function writeKind(text: string, kind: SymbolDisplayPartKind) {
         if (length > absoluteMaximumLength) return;
         writeIndent();
-        length += text.length;
-        displayParts.push(displayPart(text, kind));
+        length += text?.length;
+        displayParts.push(displayPart(text || "", kind));
     }
 
     function writeSymbol(text: string, symbol: Symbol) {
@@ -916,9 +922,9 @@ export function getMeaningFromLocation(node: Node): SemanticMeaning {
     else if (isDeclarationName(node)) {
         return getMeaningFromDeclaration(parent);
     }
-    // else if (isEntityName(node) && findAncestor(node, or(isJSDocNameReference, isJSDocLinkLike, isJSDocMemberName))) {
-    //     return SemanticMeaning.All;
-    // }
+    else if (isEntityName(node) && findAncestor(node, or(isJSDocNameReference, isJSDocLinkLike, isJSDocMemberName))) {
+        return SemanticMeaning.All;
+    }
     // else if (isTypeReference(node)) {
     //     return SemanticMeaning.Type;
     // }
@@ -928,8 +934,8 @@ export function getMeaningFromLocation(node: Node): SemanticMeaning {
     else if (isTypeParameterDeclaration(parent)) {
         Debug.assert(isJSDocTemplateTag(parent.parent)); // Else would be handled by isDeclarationName
         return SemanticMeaning.Type;
-    }
-    else if (isLiteralTypeNode(parent)) {
+    }    
+    else if (isLiteralTypeNode(parent) || isStructTypeNode(parent)) {
         // This might be T["name"], which is actually referencing a property and not a type. So allow both meanings.
         return SemanticMeaning.Type | SemanticMeaning.Value;
     }
@@ -1039,7 +1045,7 @@ export function getNodeKind(node: Node): ScriptElementKind {
         //     return ScriptElementKind.callSignatureElement;
         // case SyntaxKind.Constructor:
         // case SyntaxKind.ClassStaticBlockDeclaration:
-        //     return ScriptElementKind.constructorImplementationElement;
+        //     return ScriptElementKind.constructorImplementationElement;        
         case SyntaxKind.TypeParameter:
             return ScriptElementKind.typeParameterElement;
         // case SyntaxKind.EnumMember:
@@ -1047,7 +1053,7 @@ export function getNodeKind(node: Node): ScriptElementKind {
         case SyntaxKind.Parameter:
             return hasSyntacticModifier(node, ModifierFlags.ParameterPropertyModifier) ? ScriptElementKind.memberVariableElement : ScriptElementKind.parameterElement;
         case SyntaxKind.DefineDirective:
-            return ScriptElementKind.enumElement;
+            return ScriptElementKind.define;
         case SyntaxKind.ExportSpecifier:
         // case SyntaxKind.ImportEqualsDeclaration:
         // case SyntaxKind.ImportSpecifier:
@@ -1123,6 +1129,11 @@ export const typeKeywords: readonly SyntaxKind[] = [
     SyntaxKind.StructKeyword,
     SyntaxKind.MixedKeyword,
     SyntaxKind.ObjectKeyword,
+    SyntaxKind.StructKeyword,
+    SyntaxKind.ClassKeyword,
+    SyntaxKind.LwObjectKeyword,
+    SyntaxKind.BufferKeyword,
+    SyntaxKind.BytesKeyword,        
     // SyntaxKind.ReadonlyKeyword,
     SyntaxKind.StringKeyword,
     // SyntaxKind.SymbolKeyword,
@@ -1228,7 +1239,7 @@ export function isTagName(node: Node): boolean {
 
 /** @internal */
 export function getContextualTypeFromParentOrAncestorTypeNode(node: Expression, checker: TypeChecker): Type | undefined {
-    if (node.flags & (NodeFlags.JSDoc & ~NodeFlags.JavaScriptFile)) return undefined;
+    if (node.flags & (NodeFlags.JSDoc /*& ~NodeFlags.JavaScriptFile*/)) return undefined;
 
     const contextualType = getContextualTypeFromParent(node, checker);
     if (contextualType) return contextualType;

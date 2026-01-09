@@ -1,4 +1,4 @@
-import { ArrayBindingElement, AssertionExpression, AssignmentDeclarationKind, BinaryExpression, BindingElement, BindingPattern, Block, BreakOrContinueStatement, CallChain, CallExpression, CallLikeExpression, canHaveIllegalTypeParameters, canHaveJSDoc, ClassElement, ClassLikeDeclaration, compareDiagnostics, CompilerOptions, ConciseBody, Debug, Declaration, DeclarationName, DeclarationWithTypeParameters, Diagnostic, diagnosticsEqualityComparer, emptyArray, EntityName, Expression, FileReference, filter, find, flatMap, ForEachStatement, FunctionExpression, FunctionLikeDeclaration, GeneratedIdentifier, getAssignmentDeclarationKind, getDriverType, getEffectiveModifierFlags, getEffectiveModifierFlagsAlwaysIncludeJSDoc, getJSDocCommentsAndTags, getJSDocRoot, getJSDocTypeParameterDeclarations, HasExpressionInitializer, HasInitializer, HasLocals, HasModifiers, hasProperty, hasSyntacticModifier, HasType, Identifier, isBinaryExpression, isBindingElement, isBlock, isCallExpression, isCallSignatureDeclaration, isFunctionBlock, isFunctionExpression, isFunctionExpressionOrArrowFunction, isFunctionTypeNode, isIdentifier, isInJSFile, isInlineClosureExpression, isJSDoc, isJSDocClassTag, isJSDocDeprecatedTag, isJSDocFunctionType, isJSDocImplementsTag, isJSDocOverloadTag, isJSDocParameterTag, isJSDocReturnTag, isJSDocSatisfiesTag, isJSDocSignature, isJSDocTemplateTag, isJSDocThisTag, isJSDocThrowsTag, isJSDocTypeAlias, isJSDocTypeLiteral, isJSDocTypeTag, isKeyword, isLiteralTypeNode, isParameter, isRootedDiskPath, isSourceFile, isStringLiteral, isTypeLiteralNode, isTypeNodeKind, isVariableDeclaration, isWhiteSpaceLike, IterationStatement, JSDocClassTag, JSDocDeprecatedTag, JSDocImplementsTag, JSDocLink, JSDocLinkCode, JSDocLinkPlain, JSDocParameterTag, JSDocPropertyLikeTag, JSDocReturnTag, JSDocSatisfiesTag, JSDocSignature, JSDocTag, JSDocTemplateTag, JSDocThisTag, JSDocThrowsTag, JSDocTypeTag, KeywordSyntaxKind, LanguageVariant, lastOrUndefined, LeftHandSideExpression, length, LiteralExpression, LiteralToken, MemberName, Modifier, ModifierFlags, modifierToFlag, NamedDeclaration, Node, NodeArray, NodeFlags, OuterExpressionKinds, ParameterDeclaration, pathIsRelative, PropertyAccessExpression, PropertyName, QualifiedName, SignatureDeclaration, skipOuterExpressions, sortAndDeduplicate, SortedReadonlyArray, SourceFile, Statement, StringLiteral, StringLiteralLike, stringToToken, Symbol, SyntaxKind, TextChangeRange, TextRange, TextSpan, tryCast, TypeElement, TypeNode, TypeParameterDeclaration, TypeReferenceType, UnaryExpression, VariableDeclaration } from "./_namespaces/lpc.js";
+import { ArrayBindingElement, AssertionExpression, AssignmentDeclarationKind, BinaryExpression, BindingElement, BindingPattern, Block, BreakOrContinueStatement, CallChain, CallExpression, CallLikeExpression, canHaveIllegalTypeParameters, canHaveJSDoc, ClassElement, ClassLikeDeclaration, combinePaths, compareDiagnostics, CompilerOptions, ConciseBody, contains, createCompilerDiagnostic, Debug, Declaration, DeclarationName, DeclarationWithTypeParameters, Diagnostic, Diagnostics, diagnosticsEqualityComparer, emptyArray, EntityName, entityNameToString, Expression, FileReference, filter, find, flatMap, ForEachStatement, FunctionExpression, FunctionLikeDeclaration, GeneratedIdentifier, getAssignmentDeclarationKind, getDirectoryPath, getDriverType, getEffectiveModifierFlags, getEffectiveModifierFlagsAlwaysIncludeJSDoc, getJSDocCommentsAndTags, getJSDocRoot, getJSDocTypeParameterDeclarations, HasExpressionInitializer, HasInitializer, HasLocals, HasModifiers, hasProperty, hasSyntacticModifier, HasType, Identifier, isBinaryExpression, isBindingElement, isBlock, isCallExpression, isCallSignatureDeclaration, isFunctionBlock, isFunctionDeclaration, isFunctionExpression, isFunctionExpressionOrArrowFunction, isFunctionTypeNode, isIdentifier, isInJSFile, isInlineClosureExpression, isJSDoc, isJSDocClassTag, isJSDocDeprecatedTag, isJSDocFunctionType, isJSDocImplementsTag, isJSDocOverloadTag, isJSDocParameterTag, isJSDocReturnTag, isJSDocSatisfiesTag, isJSDocSignature, isJSDocTemplateTag, isJSDocThisTag, isJSDocThrowsTag, isJSDocTypeAlias, isJSDocTypeLiteral, isJSDocTypeTag, isKeyword, isLiteralTypeNode, isParameter, isRootedDiskPath, isSourceFile, isStringLiteral, isTypeLiteralNode, isTypeNodeKind, isVariableDeclaration, isVariableStatement, isWhiteSpaceLike, IterationStatement, JSDocClassTag, JSDocComment, JSDocDeprecatedTag, JSDocImplementsTag, JSDocLink, JSDocLinkCode, JSDocLinkPlain, JSDocParameterTag, JSDocPropertyLikeTag, JSDocReturnTag, JSDocSatisfiesTag, JSDocSignature, JSDocTag, JSDocTemplateTag, JSDocThisTag, JSDocThrowsTag, JSDocTypeTag, KeywordSyntaxKind, LanguageVariant, lastOrUndefined, LeftHandSideExpression, length, LiteralExpression, LiteralToken, LogLevel, MemberName, Modifier, ModifierFlags, modifierToFlag, NamedDeclaration, Node, NodeArray, NodeFlags, normalizePath, OuterExpressionKinds, ParameterDeclaration, pathIsRelative, PropertyAccessExpression, PropertyName, QualifiedName, setUILocale, SignatureDeclaration, skipOuterExpressions, sortAndDeduplicate, SortedReadonlyArray, SourceFile, Statement, StringLiteral, StringLiteralLike, stringToToken, Symbol, SyntaxKind, TextChangeRange, TextRange, TextSpan, tryCast, TypeElement, TypeNode, TypeParameterDeclaration, TypeReferenceType, UnaryExpression, VariableDeclaration } from "./_namespaces/lpc.js";
 
 /** @internal */
 export function isNodeArray<T extends Node>(array: readonly T[]): array is NodeArray<T> {
@@ -59,12 +59,13 @@ export function isFunctionLike(node: Node | undefined): node is SignatureDeclara
 function isFunctionLikeDeclarationKind(kind: SyntaxKind): boolean {
     switch (kind) {
         case SyntaxKind.FunctionDeclaration:
-        // case SyntaxKind.MethodDeclaration:
+        case SyntaxKind.MethodDeclaration:
         // case SyntaxKind.Constructor:
         // case SyntaxKind.GetAccessor:
         // case SyntaxKind.SetAccessor:
         case SyntaxKind.FunctionExpression:
-        // case SyntaxKind.ArrowFunction:
+        case SyntaxKind.ArrowFunction:
+        case SyntaxKind.InlineClosureExpression:
             return true;
         default:
             return false;
@@ -74,14 +75,14 @@ function isFunctionLikeDeclarationKind(kind: SyntaxKind): boolean {
 /** @internal */
 export function isFunctionLikeKind(kind: SyntaxKind): boolean {
     switch (kind) {
-        // case SyntaxKind.MethodSignature:
+        case SyntaxKind.MethodSignature:
         case SyntaxKind.CallSignature:
         case SyntaxKind.JSDocSignature:        
         case SyntaxKind.InlineClosureExpression:
         // case SyntaxKind.ConstructSignature:
-        // case SyntaxKind.IndexSignature:
-        // case SyntaxKind.FunctionType:
-        case SyntaxKind.JSDocFunctionType:
+        case SyntaxKind.IndexSignature:
+        case SyntaxKind.FunctionType:
+        case SyntaxKind.JSDocFunctionType:        
         // case SyntaxKind.ConstructorType:
             return true;
         default:
@@ -353,6 +354,15 @@ export function getJSDocDeprecatedTag(node: Node): JSDocDeprecatedTag | undefine
     return getFirstJSDocTag(node, isJSDocDeprecatedTag);
 }
 
+/** Gets the JSDoc deprecated tag for the node if present */
+export function getDeprecatedModifierOrJSDocTag(node: Node): JSDocDeprecatedTag | Modifier | undefined {
+    return (isFunctionDeclaration(node) ? node.modifiers?.find(m => m.kind == SyntaxKind.DeprecatedKeyword) :
+        isVariableDeclaration(node) && isVariableStatement(node.parent.parent) ? node.parent.parent.modifiers?.find(m => m.kind == SyntaxKind.DeprecatedKeyword) :
+        isVariableStatement(node) ? node.modifiers?.find(m => m.kind == SyntaxKind.DeprecatedKeyword) :
+        undefined) || getFirstJSDocTag(node, isJSDocDeprecatedTag);
+}
+
+
 /**
  * Iterates through the parent chain of a node and performs the callback on each parent until the callback
  * returns a truthy value, then returns that value.
@@ -405,7 +415,8 @@ export function isIterationStatement(node: Node, lookInLabeledStatements: boolea
 function isDeclarationKind(kind: SyntaxKind) {
     return kind === SyntaxKind.InlineClosureExpression
         || kind === SyntaxKind.BindingElement
-        //|| kind === SyntaxKind.ClassDeclaration
+        || kind === SyntaxKind.ClassDeclaration
+        || kind === SyntaxKind.StructDeclaration
         || kind === SyntaxKind.ClassExpression        
         // || kind === SyntaxKind.ExportSpecifier
         || kind === SyntaxKind.FunctionDeclaration
@@ -667,8 +678,10 @@ export function createTextSpan(start: number, length: number): TextSpan {
         throw new Error("start < 0");
     }
     if (length < 0) {
-        Debug.fail("length < 0");
-        throw new Error("length < 0");
+        // Debug.fail("length < 0");
+        Debug.loggingHost?.log(LogLevel.Warning, "createTextSpan, length < 0");
+        return { start, length: 1 };
+        // throw new Error("length < 0");
     }
 
     return { start, length };
@@ -804,6 +817,10 @@ export function hasOnlyExpressionInitializer(node: Node): node is HasExpressionI
 export function hasRestParameter(s: SignatureDeclaration | JSDocSignature): boolean {
     const last = lastOrUndefined<ParameterDeclaration | JSDocParameterTag>(s.parameters);
     return !!last && isRestParameter(last);
+}
+
+export function isByRefParameterDeclaration(node: ParameterDeclaration | JSDocParameterTag): node is ParameterDeclaration {
+    return !isJSDocParameterTag(node) && !!node.ampToken;
 }
 
 export function isRestParameter(node: ParameterDeclaration | JSDocParameterTag): boolean {
@@ -978,14 +995,23 @@ export function sortAndDeduplicateDiagnostics<T extends Diagnostic>(diagnostics:
     return sortAndDeduplicate<T>(diagnostics, compareDiagnostics, diagnosticsEqualityComparer);
 }
 
-export function getDefaultLibFileName(options: CompilerOptions): string {
-    switch (options?.driverType) {
-        case LanguageVariant.LDMud:
-            return "efuns/ldmud/efuns.ldmud.h";
+export function getDefaultLibFolder(options: CompilerOptions): string {
+    switch (options?.driverType) {                    
         case LanguageVariant.FluffOS:
-            return "efuns/fluffos/efuns.fluffos.h";
+            return "efuns/fluffos/";
+        case LanguageVariant.LDMud:
         default:
-            return "efuns/ldmud/efuns.ldmud.h";
+            return "efuns/ldmud/";
+    }
+}
+
+export function getDefaultLibFileName(options: CompilerOptions): string {
+    switch (options?.driverType) {        
+        case LanguageVariant.FluffOS:
+            return "efuns.fluffos.h";
+        case LanguageVariant.LDMud:
+        default:
+            return "efuns.ldmud.h";
     }
 }
 
@@ -1068,6 +1094,7 @@ export function isModifierKind(token: SyntaxKind): token is Modifier["kind"] {
         case SyntaxKind.NoMaskKeyword:
         case SyntaxKind.NoShadowKeyword:
         case SyntaxKind.NoSaveKeyword:
+        case SyntaxKind.DeprecatedKeyword:
         case SyntaxKind.FunctionsKeyword:
         case SyntaxKind.VirtualKeyword:
             return true;
@@ -1354,4 +1381,100 @@ export function getJSDocSatisfiesTag(node: Node): JSDocSatisfiesTag | undefined 
 /** @internal */
 export function isTypeReferenceType(node: Node): node is TypeReferenceType {
     return node.kind === SyntaxKind.TypeReference || node.kind === SyntaxKind.ExpressionWithTypeArguments;
+}
+
+
+/** @internal */
+export const supportedLocaleDirectories = ["zh-cn"];
+
+
+/**
+ * Checks to see if the locale is in the appropriate format,
+ * and if it is, attempts to set the appropriate language.
+ */
+export function validateLocaleAndSetLanguage(
+    locale: string,
+    sys: { getExecutingFilePath(): string; resolvePath(path: string): string; fileExists(fileName: string): boolean; readFile(fileName: string): string | undefined; },
+    errors?: Diagnostic[],
+) {
+    const lowerCaseLocale = locale.toLowerCase();
+    const matchResult = /^([a-z]+)([_-]([a-z]+))?$/.exec(lowerCaseLocale);
+
+    if (!matchResult) {
+        if (errors) {
+            errors.push(createCompilerDiagnostic(Diagnostics.Locale_must_be_of_the_form_language_or_language_territory_For_example_0_or_1, "en", "zh-cn"));
+        }
+        return;
+    }
+
+    const language = matchResult[1];
+    const territory = matchResult[3];
+
+    // First try the entire locale, then fall back to just language if that's all we have.
+    // Either ways do not fail, and fallback to the English diagnostic strings.
+    if (language != "en" && errors && !contains(supportedLocaleDirectories, lowerCaseLocale) && !contains(supportedLocaleDirectories, language)) {
+        errors.push(createCompilerDiagnostic(Diagnostics.Locale_0_is_not_supported, locale));
+    }
+    // if (contains(supportedLocaleDirectories, lowerCaseLocale) && !trySetLanguageAndTerritory(options, language, territory, errors)) {
+    //     trySetLanguageAndTerritory(options, language, /*territory*/ undefined, errors);
+    // }
+    
+    // Set the UI locale for string collation
+    setUILocale(locale);
+
+    // function trySetLanguageAndTerritory(options: CompilerOptions, language: string, territory: string | undefined, errors?: Diagnostic[]): boolean {
+    //     const compilerFilePath = normalizePath(sys.getExecutingFilePath());
+    //     const containingDirectoryPath = getDirectoryPath(compilerFilePath);
+
+    //     let filePath = combinePaths(containingDirectoryPath, getDefaultLibFolder(options), language);
+
+    //     if (territory) {
+    //         filePath = filePath + "-" + territory;
+    //     }
+
+    //     filePath = sys.resolvePath(combinePaths(filePath, "diagnosticMessages.generated.json"));
+
+    //     if (!sys.fileExists(filePath)) {
+    //         return false;
+    //     }
+
+    //     // TODO: Add codePage support for readFile?
+    //     let fileContents: string | undefined = "";
+    //     try {
+    //         fileContents = sys.readFile(filePath);
+    //     }
+    //     catch (e) {
+    //         if (errors) {
+    //             errors.push(createCompilerDiagnostic(Diagnostics.Unable_to_open_file_0, filePath));
+    //         }
+    //         return false;
+    //     }
+    //     try {
+    //         // this is a global mutation (or live binding update)!
+    //         // setLocalizedDiagnosticMessages(JSON.parse(fileContents!));
+    //     }
+    //     catch {
+    //         if (errors) {
+    //             errors.push(createCompilerDiagnostic(Diagnostics.Corrupted_locale_file_0, filePath));
+    //         }
+    //         return false;
+    //     }
+
+    //     return true;
+    // }
+}
+
+/** Gets the text of a jsdoc comment, flattening links to their text. */
+export function getTextOfJSDocComment(comment?: string | NodeArray<JSDocComment>) {
+    return typeof comment === "string" ? comment
+        : comment?.map(c => c.kind === SyntaxKind.JSDocText ? c.text : formatJSDocLink(c)).join("");
+}
+
+function formatJSDocLink(link: JSDocLink | JSDocLinkCode | JSDocLinkPlain) {
+    const kind = link.kind === SyntaxKind.JSDocLink ? "link"
+        : link.kind === SyntaxKind.JSDocLinkCode ? "linkcode"
+        : "linkplain";
+    const name = link.name ? entityNameToString(link.name) : "";
+    const space = link.name && (link.text === "" || link.text.startsWith("://")) ? "" : " ";
+    return `{@${kind} ${name}${space}${link.text}}`;
 }

@@ -132,7 +132,7 @@ varargs int query_heart_beat( object );
  * able.  returns 0
  *
  */
-object present( mixed str, object ob );
+varargs object present( mixed str, object ob );
 
 /**
  * objects - return an array of all loaded objects
@@ -332,7 +332,7 @@ int clonep( void | mixed arg );
  * object money = clone_object("/obj/money", 10, "dollars" ) ; // clone a money object and set initial values
  *
  */
-object clone_object( string name... );
+object clone_object( string name, mixed args... );
 
 /**
  * children() - returns an array of objects cloned from a given object.

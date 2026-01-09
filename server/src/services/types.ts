@@ -1,4 +1,3 @@
-import { ILpcConfig } from "../config-types.js";
 import {
     CompilerHost,
     CompilerOptions,
@@ -12,11 +11,12 @@ import {
     HasChangedAutomaticTypeDirectiveNames,
     HasInvalidatedResolutions,
     JSDocParsingMode,
-    LineAndCharacter,
-    LpcFileHandler,
+    LineAndCharacter,    
     MinimalResolutionCacheHost,
-    Node,
+    ModuleResolutionCache,
+    ModuleSpecifierCache,    
     ParsedCommandLine,
+    Path,
     Program,
     ProjectReference,
     ResolvedModule,
@@ -70,6 +70,7 @@ declare module "../compiler/types.js" {
     // Module transform: converted from interface augmentation
     export interface Node {
         getSourceFile(): SourceFile;
+        getSourceFileOrInclude(): SourceFileBase;
         getChildCount(sourceFile?: SourceFile): number;
         getChildAt(index: number, sourceFile?: SourceFile): Node;
         getChildren(sourceFile?: SourceFile): readonly Node[];
@@ -313,9 +314,8 @@ export const enum ScriptElementKind {
     constElement = "const",
 
     letElement = "let",
-
+    define = "define",
     directory = "directory",
-
     externalModuleName = "external module name",
 
     /**
@@ -550,7 +550,7 @@ export interface LanguageServiceHost
     getCompilationSettings(): CompilerOptions;
     getNewLine?(): string;
     /** @internal */ updateFromProject?(): void;
-    /** @internal */ updateFromProjectInProgress?: boolean;
+    /** @internal */ updateFromProjectInProgress?: boolean;    
 
     getProjectVersion?(): string;
     getScriptFileNames(): string[];
@@ -650,7 +650,7 @@ export interface LanguageServiceHost
     /** @internal */ getGlobalTypingsCacheLocation?(): string | undefined;
     // /** @internal */ getSymlinkCache?(files?: readonly SourceFile[]): SymlinkCache;
     /* Lets the Program from a AutoImportProviderProject use its host project's ModuleResolutionCache */
-    // /** @internal */ getModuleResolutionCache?(): ModuleResolutionCache | undefined;
+    /** @internal */ getModuleResolutionCache?(): ModuleResolutionCache | undefined;
 
     /*
      * Required for full import and type reference completions.
@@ -677,13 +677,14 @@ export interface LanguageServiceHost
     ): string | undefined;
     // /** @internal */ getPackageJsonsForAutoImport?(rootDir?: string): readonly ProjectPackageJsonInfo[];
     /** @internal */ getCachedExportInfoMap?(): ExportInfoMap;
-    // /** @internal */ getModuleSpecifierCache?(): ModuleSpecifierCache;
+    /** @internal */ getModuleSpecifierCache?(): ModuleSpecifierCache;
     /** @internal */ setCompilerHost?(host: CompilerHost): void;
     /** @internal */ useSourceOfProjectReferenceRedirect?(): boolean;
     /** @internal */ getPackageJsonAutoImportProvider?(): Program | undefined;
     // /** @internal */ sendPerformanceEvent?(kind: PerformanceEvent["kind"], durationMs: number): void;
     getParsedCommandLine?(fileName: string): ParsedCommandLine | undefined;
-    // /** @internal */ onReleaseParsedCommandLine?(configFileName: string, oldResolvedRef: ResolvedProjectReference | undefined, optionOptions: CompilerOptions): void;
+    onAllFilesNeedReparse?(fileNames: string[]): void;
+    /** @internal */ onReleaseParsedCommandLine?(configFileName: string, oldResolvedRef: ResolvedProjectReference | undefined, optionOptions: CompilerOptions): void;
     /** @internal */ onReleaseOldSourceFile?(
         oldSourceFile: SourceFile,
         oldOptions: CompilerOptions,
@@ -692,7 +693,8 @@ export interface LanguageServiceHost
     ): void;
     /** @internal */ getIncompleteCompletionsCache?(): IncompleteCompletionsCache;
     //** @internal */ runWithTemporaryFileUpdate?(rootFile: string, updatedText: string, cb: (updatedProgram: Program, originalProgram: Program | undefined, updatedPastedText: SourceFile) => void): void;
-    jsDocParsingMode?: JSDocParsingMode | undefined;
+    jsDocParsingMode?: JSDocParsingMode | undefined;    
+    /** @internal */ getParseableFiles(): Set<Path>;
 }
 
 /**

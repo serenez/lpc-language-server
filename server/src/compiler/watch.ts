@@ -1,4 +1,4 @@
-import { chainDiagnosticMessages, convertToRelativePath, countWhere, createCompilerDiagnostic, Debug, Diagnostic, DiagnosticAndArguments, DiagnosticCategory, DiagnosticMessage, DiagnosticMessageChain, Diagnostics, endsWith, Extension, fileExtensionIs, FileIncludeKind, FileIncludeReason, FileWatcher, filter, find, findIndex, flattenDiagnosticMessageText, ForegroundColorEscapeSequences, formatColorAndReset, getDirectoryPath, getEmitScriptTarget, getLineAndCharacterOfPosition, getNameOfScriptTarget, getNormalizedAbsolutePath, getPatternFromSpec, getReferencedFileLocation, getRegexFromPattern, getRelativePathFromDirectory, HasCurrentDirectory, isExternalOrCommonJsModule, isReferencedFile, isReferenceFileLocation, isString, noop, packageIdToString, pathIsAbsolute, Program, ReportFileInError, SourceFile } from "./_namespaces/lpc";
+import { chainDiagnosticMessages, convertToRelativePath, countWhere, createCompilerDiagnostic, createGetCanonicalFileName, Debug, Diagnostic, DiagnosticAndArguments, DiagnosticCategory, diagnosticCategoryName, DiagnosticMessage, DiagnosticMessageChain, DiagnosticReporter, Diagnostics, endsWith, Extension, fileExtensionIs, FileIncludeKind, FileIncludeReason, FileWatcher, filter, find, findIndex, flattenDiagnosticMessageText, ForegroundColorEscapeSequences, formatColorAndReset, formatDiagnostic, FormatDiagnosticsHost, formatDiagnosticsWithColorAndContext, getDirectoryPath, getEmitScriptTarget, getLineAndCharacterOfPosition, getNameOfScriptTarget, getNormalizedAbsolutePath, getPatternFromSpec, getReferencedFileLocation, getRegexFromPattern, getRelativePathFromDirectory, HasCurrentDirectory, isExternalOrCommonJsModule, isReferencedFile, isReferenceFileLocation, isString, noop, packageIdToString, pathIsAbsolute, Program, ReportFileInError, SourceFile, sys, System } from "./_namespaces/lpc";
 
 /** @internal */
 export interface WatchTypeRegistry {
@@ -65,10 +65,9 @@ export function explainFiles(program: Program, write: (s: string) => void) {
     const reasons = program.getFileIncludeReasons();
     const relativeFileName = (fileName: string) => convertToRelativePath(fileName, program.getCurrentDirectory(), program.getCanonicalFileName);
     for (const file of program.getSourceFiles()) {
-        write(`${toFileName(file, relativeFileName)}`);
-        // TODO
-        // reasons.get(file.path)?.forEach(reason => write(`  ${fileIncludeReasonToDiagnostics(program, reason, relativeFileName).messageText}`));
-        // explainIfFileIsRedirectAndImpliedFormat(file, relativeFileName)?.forEach(d => write(`  ${d.messageText}`));
+        write(`${toFileName(file, relativeFileName)}`);        
+        reasons.get(file.path)?.forEach(reason => write(`  ${fileIncludeReasonToDiagnostics(program, reason, relativeFileName).messageText}`));
+        explainIfFileIsRedirectAndImpliedFormat(file, relativeFileName)?.forEach(d => write(`  ${d.messageText}`));
     }
 }
 
@@ -335,4 +334,34 @@ export function fileIncludeReasonToDiagnostics(program: Program, reason: FileInc
             Debug.fail("Unknown include kind");
             // Debug.assertNever(reason);
     }
+}
+
+const sysFormatDiagnosticsHost: FormatDiagnosticsHost | undefined = sys ? {
+    getCurrentDirectory: () => sys.getCurrentDirectory(),
+    getNewLine: () => sys.newLine,
+    getCanonicalFileName: createGetCanonicalFileName(sys.useCaseSensitiveFileNames),
+} : undefined;
+
+
+/**
+ * Create a function that reports error by writing to the system and handles the formatting of the diagnostic
+ *
+ * @internal
+ */
+export function createDiagnosticReporter(system: System, pretty?: boolean): DiagnosticReporter {
+    const host: FormatDiagnosticsHost = system === sys && sysFormatDiagnosticsHost ? sysFormatDiagnosticsHost : {
+        getCurrentDirectory: () => system.getCurrentDirectory(),
+        getNewLine: () => system.newLine,
+        getCanonicalFileName: createGetCanonicalFileName(system.useCaseSensitiveFileNames),
+    };
+    if (!pretty) {
+        return diagnostic => system.write(formatDiagnostic(diagnostic, host));
+    }
+
+    const diagnostics: Diagnostic[] = new Array(1);
+    return diagnostic => {
+        diagnostics[0] = diagnostic;
+        system.write(formatDiagnosticsWithColorAndContext(diagnostics, host) + host.getNewLine());
+        diagnostics[0] = undefined!; // TODO: GH#18217
+    };
 }

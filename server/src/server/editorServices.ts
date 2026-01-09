@@ -26,7 +26,6 @@ export interface ProjectsUpdatedInBackgroundEvent {
     data: { openFiles: string[]; };
 }
 
-
 export class ProjectService {
     /** @internal */
     readonly documentRegistry: DocumentRegistry;
@@ -116,6 +115,12 @@ export class ProjectService {
      * Open files: with value being project root path, and key being Path of the file that is open
      */
     readonly openFiles: Map<Path, NormalizedPath | undefined> = new Map<Path, NormalizedPath | undefined>();
+
+    /**
+     * Files that have been opened or referenced by an open file and therefore
+     * should be parsed as part of the program.
+     */
+    readonly shouldParse: Set<Path> = new Set<Path>();
 
     /** Config files looked up and cached config files for open script info */
     private readonly configFileForOpenFiles = new Map<Path, ConfigFileName>();
@@ -406,6 +411,7 @@ export class ProjectService {
 
         const { fileName } = originalLocation;
         const scriptInfo = this.getScriptInfo(fileName);
+        
         if (!scriptInfo && !this.host.fileExists(fileName)) return undefined;
 
         const originalFileInfo: OriginalFileInfo = { fileName: toNormalizedPath(fileName), path: this.toPath(fileName) };
@@ -523,6 +529,19 @@ export class ProjectService {
             }
         }
         return info;
+    }
+
+    /** @internal */
+    markFileForParsing(fileName: string): boolean {        
+        const filePath = this.toPath(fileName);
+
+        if (this.shouldParse.has(filePath)) {
+            return false;
+        }
+
+        this.shouldParse.add(filePath);
+        this.tryGetDefaultProjectForFile(toNormalizedPath(fileName))?.markFileAsDirty(filePath);
+        return true;
     }
     
     /** @internal */
@@ -977,7 +996,7 @@ export class ProjectService {
     }
 
 
-    openClientFileWithNormalizedPath(fileName: NormalizedPath, fileContent?: string, scriptKind?: ScriptKind, hasMixedContent?: boolean, projectRootPath?: NormalizedPath): OpenConfiguredProjectResult {
+    openClientFileWithNormalizedPath(fileName: NormalizedPath, fileContent?: string, scriptKind?: ScriptKind, hasMixedContent?: boolean, projectRootPath?: NormalizedPath): OpenConfiguredProjectResult {        
         const info = this.getOrCreateOpenScriptInfo(fileName, fileContent, scriptKind, hasMixedContent, projectRootPath);
         const { retainProjects, ...result } = this.assignProjectToOpenedScriptInfo(info);
         this.cleanupProjectsAndScriptInfos(
@@ -1150,7 +1169,7 @@ export class ProjectService {
         // }
         // project.canConfigFileJsonReportNoInputFiles = canJsonReportNoInputFiles(parsedCommandLine.raw);
         project.setProjectErrors(parsedCommandLine.options.configFile!.parseDiagnostics);
-        // project.updateReferences(parsedCommandLine.projectReferences);
+        project.updateReferences(parsedCommandLine.projectReferences);
         // const lastFileExceededProgramSize = this.getFilenameForExceededTotalSizeLimitForNonTsFiles(project.canonicalConfigFilePath, compilerOptions, parsedCommandLine.fileNames, fileNamePropertyReader);
         // if (lastFileExceededProgramSize) {
         //     project.disableLanguageService(lastFileExceededProgramSize);
@@ -1173,9 +1192,9 @@ export class ProjectService {
         project.setWatchOptions(watchOptions);
         // VS only set the CompileOnSaveEnabled option in the request if the option was changed recently
         // therefore if it is undefined, it should not be updated.
-        // if (compileOnSave !== undefined) {
-        //     project.compileOnSaveEnabled = compileOnSave;
-        // }
+        if (compileOnSave !== undefined) {
+            project.compileOnSaveEnabled = compileOnSave;
+        }
         this.addFilesToNonInferredProject(project, newUncheckedFiles, propertyReader, newTypeAcquisition);
     }
 
@@ -2478,7 +2497,7 @@ export class ProjectService {
                 noopConfigFileWatcher;
         });
     }
-
+    
     /**
      * Remove this file from the set of open, non-configured files.
      * @param info The file that has been closed or newly configured
@@ -2621,7 +2640,7 @@ export class ProjectService {
     }
 
     /** @internal */
-    applyChangesToFile(scriptInfo: ScriptInfo, changes: Iterable<TextChange>) {
+    applyChangesToFile(scriptInfo: ScriptInfo, changes: Iterable<TextChange>) {        
         for (const change of changes) {            
             scriptInfo.editContent(change.span.start, change.span.start + change.span.length, change.newText);
         }

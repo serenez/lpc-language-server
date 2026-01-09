@@ -1,3 +1,4 @@
+import { pushIfDefined } from "../utils.js";
 import { StringCompletions } from "./_namespaces/lpc.Completions.js";
 import {
     BinaryExpression,
@@ -25,6 +26,7 @@ import {
     ContextFlags,
     Debug,
     Declaration,
+    DefineDirective,
     Diagnostics,
     DotDotDotToken,
     EmitFlags,
@@ -155,6 +157,9 @@ import {
     getPropertyNameForPropertyNameNode,
     getQuotePreference,
     getReplacementSpanForContextToken,
+    getSourceFileOfNode,
+    getSourceFileOrIncludeOfNode,
+    getSourceTextOfNodeFromSourceFile,
     getSwitchedType,
     getSymbolId,
     getSynthesizedDeepClone,
@@ -183,6 +188,7 @@ import {
     isConstructorDeclaration,
     isContextualKeyword,
     isDeclarationName,
+    isDefineDirective,
     isDeprecatedDeclaration,
     isEntityName,
     isEqualityOperatorKind,
@@ -1210,16 +1216,16 @@ function completionInfoFromData(
     );
 
     if (keywordFilters !== KeywordCompletionFilters.None) {
-        // for (const keywordEntry of getKeywordCompletions(keywordFilters, !insideJsDocTagTypeExpression && isSourceFileJS(sourceFile))) {
-        //     if (
-        //         isTypeOnlyLocation && isTypeKeyword(stringToToken(keywordEntry.name)!) ||
-        //         !isTypeOnlyLocation && isContextualKeywordInAutoImportableExpressionSpace(keywordEntry.name) ||
-        //         !uniqueNames.has(keywordEntry.name)
-        //     ) {
-        //         uniqueNames.add(keywordEntry.name);
-        //         insertSorted(entries, keywordEntry, compareCompletionEntries, /*equalityComparer*/ undefined, /*allowDuplicates*/ true);
-        //     }
-        // }
+        for (const keywordEntry of getKeywordCompletions(keywordFilters, !insideJsDocTagTypeExpression)) {
+            if (
+                isTypeOnlyLocation && isTypeKeyword(stringToToken(keywordEntry.name)!) ||
+                !isTypeOnlyLocation && isContextualKeywordInAutoImportableExpressionSpace(keywordEntry.name) ||
+                !uniqueNames.has(keywordEntry.name)
+            ) {
+                uniqueNames.add(keywordEntry.name);
+                insertSorted(entries, keywordEntry, compareCompletionEntries, /*equalityComparer*/ undefined, /*allowDuplicates*/ true);
+            }
+        }
     }
 
     for (const keywordEntry of getContextualKeywords(contextToken, position)) {
@@ -1519,7 +1525,7 @@ function createCompletionEntry(
             return undefined;
         }
         // If the text after the '.' starts with this name, write over it. Else, add new text.
-        const end = startsWith(name, propertyAccessToConvert.name.text) ? propertyAccessToConvert.name.end : dot.end;
+        const end = startsWith(name, tryGetTextOfPropertyName(propertyAccessToConvert.name)) ? propertyAccessToConvert.name.end : dot.end;
         replacementSpan = createTextSpanFromBounds(dot.getStart(sourceFile), end);
     }
     
@@ -1622,6 +1628,14 @@ function createCompletionEntry(
         data = originToCompletionEntryData(origin);
         hasAction = !importStatementCompletion;
     }
+
+    // if (symbol.flags & SymbolFlags.Define) {
+    //     const defineNode = symbol.declarations?.[0] as DefineDirective;
+    //     if (defineNode) {
+    //         const sourceFile = getSourceFileOrIncludeOfNode(defineNode);
+    //         sourceDisplay = getSourceTextOfNodeFromSourceFile(sourceFile, defineNode, true);
+    //     }
+    // }
 
     const parentNamedImportOrExport = findAncestor(location, isNamedImportsOrExports);
     // if (parentNamedImportOrExport?.kind === SyntaxKind.NamedImports) {
@@ -2485,12 +2499,12 @@ export function getCompletionEntriesFromSymbols(
         }
 
         // expressions are value space (which includes the value namespaces)
-        return !!(allFlags & SymbolFlags.Value);
+        return !!(allFlags & (SymbolFlags.ValueOrDefine));
     }
 
     function symbolAppearsToBeTypeOnly(symbol: Symbol): boolean {
         const flags = getCombinedLocalAndExportSymbolFlags(skipAlias(symbol, typeChecker));
-        return !(flags & SymbolFlags.Value) && (!isInJSFile(symbol.declarations?.[0]) || !!(flags & SymbolFlags.Type));
+        return !(flags & SymbolFlags.ValueOrDefine) && (!isInJSFile(symbol.declarations?.[0]) || !!(flags & SymbolFlags.Type));
     }
 }
 
@@ -3166,11 +3180,14 @@ function getCompletionData(
     const getModuleSpecifierResolutionHost = memoizeOne((isFromPackageJson: boolean) => {
         return createModuleSpecifierResolutionHost(isFromPackageJson ? host.getPackageJsonAutoImportProvider!()! : program, host);
     });
-
+    
     if (isRightOfDot || isRightOfQuestionDot) {
         getTypeScriptMemberSymbols();
     }    
     else {
+        // always add macros
+        getMacroSymbols();
+
         // For JavaScript or TypeScript, if we're not after a dot, then just try to get the
         // global symbols in scope.  These results should be valid for either language as
         // the set of symbols that can be referenced from this location.        
@@ -3255,6 +3272,20 @@ function getCompletionData(
         //     return tag.class;
         // }
         return undefined;
+    }
+
+
+    function getMacroSymbols(): void {
+        // defines are always bound to the source file
+        const file = getSourceFileOfNode(node);
+                
+        if (isSourceFile(file) && file.statements) {
+            forEach(file.statements, statement => {
+                if (isDefineDirective(statement)) {
+                    pushIfDefined(symbols, typeChecker.getSymbolAtLocation(statement));
+                }
+            });
+        }
     }
 
     function getTypeScriptMemberSymbols(): void {
@@ -3633,12 +3664,12 @@ function getCompletionData(
         if (contextToken) {
             const parentKind = contextToken.parent.kind;
             switch (contextToken.kind) {
-                case SyntaxKind.ColonToken:
-                    return parentKind === SyntaxKind.PropertyDeclaration ||
-                        parentKind === SyntaxKind.PropertySignature ||
-                        parentKind === SyntaxKind.Parameter ||
-                        parentKind === SyntaxKind.VariableDeclaration ||
-                        isFunctionLikeKind(parentKind);
+                // case SyntaxKind.ColonToken:
+                //     return parentKind === SyntaxKind.PropertyDeclaration ||
+                //         parentKind === SyntaxKind.PropertySignature ||
+                //         parentKind === SyntaxKind.Parameter ||
+                //         parentKind === SyntaxKind.VariableDeclaration ||
+                //         isFunctionLikeKind(parentKind);
 
                 case SyntaxKind.EqualsToken:
                     return /*parentKind === SyntaxKind.TypeAliasDeclaration ||*/ parentKind === SyntaxKind.TypeParameter;
@@ -3647,8 +3678,9 @@ function getCompletionData(
                 //     return parentKind === SyntaxKind.AsExpression;
 
                 case SyntaxKind.LessThanToken:
-                    return parentKind === SyntaxKind.TypeReference /*||
-                        parentKind === SyntaxKind.TypeAssertionExpression*/;
+                    return parentKind === SyntaxKind.TypeReference ||
+                        parentKind === SyntaxKind.TypeAssertionExpression ||
+                        parentKind === SyntaxKind.PrefixUnaryExpression;
 
                 // case SyntaxKind.ExtendsKeyword:
                 //     return parentKind === SyntaxKind.TypeParameter;
@@ -4818,7 +4850,7 @@ const allKeywordsCompletions: () => readonly CompletionEntry[] = memoize(() => {
     const res: CompletionEntry[] = [];
     for (let i = SyntaxKind.FirstKeyword; i <= SyntaxKind.LastKeyword; i++) {        
         const name = tokenToString(i); 
-        if (i === SyntaxKind.InheritKeyword) {
+        if (i === SyntaxKind.MappingKeyword) {
             const ii=0;
         }
         if (name) {
@@ -4841,6 +4873,7 @@ function getKeywordCompletions(keywordFilter: KeywordCompletionFilters, filterOu
         (_keywordCompletions[index] = getTypescriptKeywordCompletions(keywordFilter)
             .filter(entry => !isTypeScriptOnlyKeyword(stringToToken(entry.name)!)));
 }
+
 
 function getTypescriptKeywordCompletions(keywordFilter: KeywordCompletionFilters): readonly CompletionEntry[] {
     return _keywordCompletions[keywordFilter] || (_keywordCompletions[keywordFilter] = allKeywordsCompletions().filter(entry => {
@@ -4880,7 +4913,7 @@ function getTypescriptKeywordCompletions(keywordFilter: KeywordCompletionFilters
 function isTypeScriptOnlyKeyword(kind: SyntaxKind) {
     switch (kind) {
         // case SyntaxKind.AbstractKeyword:
-        case SyntaxKind.AnyKeyword:
+        // case SyntaxKind.AnyKeyword:
         case SyntaxKind.IntKeyword:
         case SyntaxKind.FloatKeyword:
         // case SyntaxKind.BooleanKeyword:

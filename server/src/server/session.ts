@@ -1,5 +1,5 @@
-import { arrayFrom, arrayReverseIterator, cast, CodeAction, CompletionEntry, CompletionEntryData, CompletionEntryDetails, CompletionInfo, concatenate, createQueue, createSet, createTextSpan, Debug, DefinitionInfo, Diagnostic, diagnosticCategoryName, DiagnosticRelatedInformation, displayPartsToString, DocumentPosition, DocumentSpan, documentSpansEqual, emptyArray, FileTextChanges, filter, find, first, firstIterator, firstOrUndefined, flatMap, flattenDiagnosticMessageText, FormatCodeSettings, getDocumentSpansEqualityComparer, getLineAndCharacterOfPosition, getMappedContextSpan, getMappedDocumentSpan, getMappedLocation, getSnapshotText, identity, isArray, isDeclarationFileName, isString, JSDocTagInfo, LanguageServiceMode, LanguageVariant, LineAndCharacter, LpcConfigSourceFile, map, mapDefined, mapDefinedIterator, mapIterator, memoize, MultiMap, NavigationTree, normalizePath, OperationCanceledException, Path, perfLogger, PossibleProgramFileInfo, QuickInfo, ReferencedSymbol, ReferencedSymbolDefinitionInfo, ReferencedSymbolEntry, RenameInfo, RenameInfoFailure, RenameLocation, ScriptKind, SignatureHelpItem, SignatureHelpItems, singleIterator, startsWith, SymbolDisplayPart, TextChange, TextSpan, textSpanEnd, toFileNameLowerCase, tracing, UserPreferences, WithMetadata } from "./_namespaces/lpc";
-import { ChangeFileArguments, ConfiguredProject, convertScriptKindName, convertUserPreferences, Errors, GcTimer, indent, isConfiguredProject, Logger, LogLevel, Msg, NormalizedPath, OpenFileArguments, Project, ProjectKind, ProjectService, ProjectServiceEventHandler, ProjectServiceOptions, ScriptInfo, ServerHost, stringifyIndented, toNormalizedPath, updateProjectIfDirty } from "./_namespaces/lpc.server";
+import { arrayFrom, arrayReverseIterator, cast, CodeAction, CompletionEntry, CompletionEntryData, CompletionEntryDetails, CompletionInfo, concatenate, createQueue, createSet, createTextSpan, Debug, DefinitionInfo, Diagnostic, diagnosticCategoryName, DiagnosticRelatedInformation, displayPartsToString, DocumentPosition, DocumentSpan, documentSpansEqual, emptyArray, FileTextChanges, filter, find, first, firstIterator, firstOrUndefined, flatMap, flattenDiagnosticMessageText, forEach, FormatCodeSettings, getDocumentSpansEqualityComparer, getLineAndCharacterOfPosition, getMappedContextSpan, getMappedDocumentSpan, getMappedLocation, getSnapshotText, getTouchingPropertyName, identity, isArray, isDeclarationFileName, isSourceFile, isString, JSDocLinkDisplayPart, JSDocTagInfo, LanguageServiceMode, LanguageVariant, LineAndCharacter, LpcConfigSourceFile, map, mapDefined, mapDefinedIterator, mapIterator, memoize, MultiMap, NavigationTree, normalizePath, OperationCanceledException, Path, perfLogger, PossibleProgramFileInfo, QuickInfo, ReferencedSymbol, ReferencedSymbolDefinitionInfo, ReferencedSymbolEntry, RenameInfo, RenameInfoFailure, RenameLocation, ScriptKind, SignatureHelpItem, SignatureHelpItems, singleIterator, startsWith, SymbolDisplayPart, TextChange, TextSpan, textSpanEnd, toFileNameLowerCase, toPath, tracing, UserPreferences, WithMetadata } from "./_namespaces/lpc";
+import { ChangeFileArguments, ConfiguredProject, convertScriptKindName, convertUserPreferences, Errors, GcTimer, indent, isConfiguredProject, Logger, LogLevel, Msg, NormalizedPath, normalizedPathToPath, OpenFileArguments, Project, ProjectKind, ProjectService, ProjectServiceEventHandler, ProjectServiceOptions, ScriptInfo, ServerHost, stringifyIndented, toNormalizedPath, updateProjectIfDirty } from "./_namespaces/lpc.server";
 import * as protocol from "./protocol.js";
 
 export interface HostCancellationToken {
@@ -279,7 +279,7 @@ export class Session<TMessage = string> implements EventSender {
      * @param fileName is the name of the file to be opened
      * @param fileContent is a version of the file content that is known to be more up to date than the one on disk
      */
-    private openClientFile(fileName: NormalizedPath, fileContent?: string, scriptKind?: ScriptKind, projectRootPath?: NormalizedPath) {
+    private openClientFile(fileName: NormalizedPath, fileContent?: string, scriptKind?: ScriptKind, projectRootPath?: NormalizedPath) {                        
         this.projectService.openClientFileWithNormalizedPath(fileName, fileContent, scriptKind, /*hasMixedContent*/ false, projectRootPath);
     }
 
@@ -303,11 +303,10 @@ export class Session<TMessage = string> implements EventSender {
             return [];
         }
         return parts.map(part =>
-            part
-            // part.kind !== "linkName" ? part : {
-            //     ...part,
-            //     target: this.toFileSpan((part as JSDocLinkDisplayPart).target.fileName, (part as JSDocLinkDisplayPart).target.textSpan, project),
-            // }
+            part.kind !== "linkName" ? part : {
+                ...part,
+                target: this.toFileSpan((part as JSDocLinkDisplayPart).target.fileName, (part as JSDocLinkDisplayPart).target.textSpan, project),
+            }
         );
     }
         
@@ -351,6 +350,9 @@ export class Session<TMessage = string> implements EventSender {
         scriptInfo.textStorage.switchToScriptVersionCache();
         const start = scriptInfo.lineOffsetToPosition(args.line, args.offset);
         const end = scriptInfo.lineOffsetToPosition(args.endLine, args.endOffset);
+
+        scriptInfo.registerFileUpdate()
+
         if (start >= 0) {
             this.changeSeq++;
             this.projectService.applyChangesToFile(
@@ -360,6 +362,28 @@ export class Session<TMessage = string> implements EventSender {
                     newText: args.insertString!, // TODO: GH#18217
                 }),
             );
+            
+            // if this is an .h file, iterate over all the resolutions of this file
+            // and increment their script info version. this should cause them
+            // to get re-parsed when the new program is created.
+            // TODO - there's probably a more efficient way to do this vs just testing for .h files.
+            if (scriptInfo.fileName.endsWith(".h")) {
+                const openFiles = this.projectService.openFiles;
+                let count = 0;
+                scriptInfo.containingProjects.forEach(project => {                                        
+                    const resolutions = project.resolutionCache.resolvedFileToResolution.get(scriptInfo.path);                    
+                    resolutions?.forEach(r => {
+                        let incrementAllFiles = r.files?.size < 50;
+                        r.files.forEach(p => { 
+                            if (incrementAllFiles || openFiles.has(p)) {
+                                this.projectService.getScriptInfoForPath(p)?.incrementVersion();                                
+                                count++;
+                            }
+                        });                        
+                    });                                        
+                });                                
+                // this.logger.msg(`Queued ${count} resolutions for reparse due to change in ${scriptInfo.fileName}`);
+            }
         }
     }
     
@@ -369,6 +393,10 @@ export class Session<TMessage = string> implements EventSender {
         }
 
         if (fileNames.length > 0) {
+            // mark files as needing parsing
+            fileNames.map(fileName => {
+                this.projectService.markFileForParsing(fileName);        
+            });
             this.updateErrorCheck(next, fileNames, delay);
         }
     }
@@ -397,7 +425,7 @@ export class Session<TMessage = string> implements EventSender {
                 next.delay("checkOne", followMs, checkOne);
             }
         };
-        const checkOne = () => {
+        const checkOne = () => {            
             if (this.changeSeq !== seq) {
                 return;
             }
@@ -415,16 +443,18 @@ export class Session<TMessage = string> implements EventSender {
 
             const { fileName, project } = item;
             const diagnostics = [];
-
+                        
             // Ensure the project is up to date before checking if this file is present in the project.
             updateProjectIfDirty(project);
+
             if (!project.containsFile(fileName, requireOpen)) {
                 return;
             }
+        
 
             const syntaxDiag = this.syntacticCheck(fileName, project);
             diagnostics.push(...syntaxDiag);
-
+            
             if (this.changeSeq !== seq) {
                 this.sendAllDiagnostics(diagnostics, fileName, project);
                 return;
@@ -616,10 +646,11 @@ export class Session<TMessage = string> implements EventSender {
 
     private getEncodedSemanticClassifications(args: protocol.EncodedSemanticClassificationsRequestArgs) {
         const { file, project } = this.getFileAndProject(args);
-        if (!project.getCurrentProgram()) return;
-        // TODO - why do we have to run this first and TS doesn't?
-        // this.semanticCheck(file, project);
+        if (!project.getCurrentProgram()) return;        
         // const format = args.format === "2020" ? SemanticClassificationFormat.TwentyTwenty : SemanticClassificationFormat.Original;
+        if (this.projectService.markFileForParsing(file)) {
+            project.markAsDirty();
+        }
         return project.getLanguageService().getEncodedSemanticClassifications(file, args);
     } 
 
@@ -628,7 +659,7 @@ export class Session<TMessage = string> implements EventSender {
         const scriptInfo = this.projectService.getScriptInfoForNormalizedPath(file)!;
         const position = this.getPosition(args, scriptInfo);
         const helpItems = project.getLanguageService().getSignatureHelpItems(file, position, args);
-        const useDisplayParts = !!this.getPreferences(file).displayPartsForJSDoc;
+        const useDisplayParts = true;//!!this.getPreferences(file).displayPartsForJSDoc;
         if (helpItems && simplifiedResult) {
             const span = helpItems.applicableSpan;
             return {
@@ -666,8 +697,8 @@ export class Session<TMessage = string> implements EventSender {
         const quickInfo = project.getLanguageService().getQuickInfoAtPosition(file, this.getPosition(args, scriptInfo));
         if (!quickInfo) {
             return undefined;
-        }        
-        const useDisplayParts = false;//!!this.getPreferences(file).displayPartsForJSDoc;
+        }                
+        const useDisplayParts = true;//!!this.getPreferences(file).displayPartsForJSDoc;
         if (simplifiedResult) {
             const displayString = displayPartsToString(quickInfo.displayParts);
             return {
@@ -693,7 +724,7 @@ export class Session<TMessage = string> implements EventSender {
         updateProjectIfDirty(project);
         
         const options = project.getCompilerOptions();
-        const driverType = options?.driverType == LanguageVariant.LDMud ? "LDMud" : "FluffOS";
+        const driverType = options?.driverType == LanguageVariant.FluffOS ? "FluffOS" : "LDMud";
 
         const projectInfo = {
             configFileName: project.getProjectName(),
@@ -1074,7 +1105,7 @@ export class Session<TMessage = string> implements EventSender {
         const scriptInfo = this.projectService.getScriptInfoForNormalizedPath(file)!;
         const position = this.getPosition(args, scriptInfo);
         const formattingOptions = project.projectService.getFormatCodeOptions(file);
-        const useDisplayParts = !!this.getPreferences(file).displayPartsForJSDoc;
+        const useDisplayParts = true;// !!this.getPreferences(file).displayPartsForJSDoc;
 
         const result = mapDefined(args.entryNames, entryName => {
             const { name, source, data } = typeof entryName === "string" ? { name: entryName, source: undefined, data: undefined } : entryName;
@@ -1167,7 +1198,7 @@ export class Session<TMessage = string> implements EventSender {
             return this.requiredResponse(this.getSignatureHelpItems(request.arguments, /*simplifiedResult*/ true));
         },
         [protocol.CommandTypes.Quickinfo]: (request: protocol.QuickInfoRequest) => {
-            return this.requiredResponse(this.getQuickInfoWorker(request.arguments, /*simplifiedResult*/ false));
+            return this.requiredResponse(this.getQuickInfoWorker(request.arguments, /*simplifiedResult*/ true));
         },
         [protocol.CommandTypes.EncodedSemanticClassificationsFull]: (request: protocol.EncodedSemanticClassificationsRequest) => {
             return this.requiredResponse(this.getEncodedSemanticClassifications(request.arguments));
@@ -1665,7 +1696,8 @@ function getPerProjectReferences<TResult>(
             if (!project.containsFile(toNormalizedPath(location.fileName))) {
                 continue;
             }
-            const projectResults = searchPosition(project, location);
+            searchUnparsedProjectFiles(project, location);
+            const projectResults = searchPosition(project, location);            
             resultsMap.set(project, projectResults ?? emptyArray);
             searchedProjectKeys.add(getProjectKey(project));
         }
@@ -1695,6 +1727,44 @@ function getPerProjectReferences<TResult>(
     }
 
     return resultsMap;
+    
+    /**
+     * search unparsed project files (via readfile) for instances of the symbol
+     * and mark them for parsing
+     * @param project 
+     * @param location 
+     * @returns 
+     */
+    function searchUnparsedProjectFiles(project: Project, location: DocumentPosition): void {
+        // get the sourcefile for this location & the node at current position
+        const program = project.getLanguageService().getCurrentProgram();
+        const sourceFile = program.getSourceFile(location.fileName);        
+        const node = sourceFile && getTouchingPropertyName(sourceFile, location.pos);
+        const symbol = program.getTypeChecker().getSymbolAtLocation(node);
+
+        // check the declaration - if it is in the same sourcefile and its parent is not the sourcefile
+        // the all refs are within this file and we don't need to do a global search
+        const declaration = firstOrUndefined(symbol?.declarations);
+        if (declaration?.getSourceFile() === sourceFile && !isSourceFile(declaration.parent)) return;
+                
+        // loop through root files - for any that are not parseable,
+        // load the contents from disk and look for the string "name"
+        const name = symbol.getName();
+        const parseableFiles = project.getParseableFiles();
+        const rootFiles = project.getRootFiles();
+        forEach(rootFiles, rootFile => {
+            const rootFilePath = project.toPath(rootFile);
+            if (!parseableFiles.has(rootFilePath)) {
+                const text = project.readFile(rootFile);
+                if (text && text.indexOf(name) !== -1) {
+                    // mark it for parsing, which will get picked up when sync worker is called
+                    projectService.markFileForParsing(rootFile);
+                    project.markAsDirty();
+                    //return { fileName: rootFilePath, pos: text.indexOf(name) };
+                }
+            }
+        });
+    }
 
     function searchPosition(project: Project, location: DocumentPosition): readonly TResult[] | undefined {
         const projectResults =  getResultsForPosition(project, location);

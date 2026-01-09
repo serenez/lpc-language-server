@@ -83,6 +83,7 @@ import {
     isFunctionDeclaration,
     isFunctionExpression,
     isIdentifier,
+    isInExternalFileContext,
     isInlineClosureExpression,
     isIntLiteral,
     isJSDocTypeAlias,
@@ -91,6 +92,7 @@ import {
     // isModuleDeclaration,
     // isNumericLiteral,
     isObjectLiteralExpression,
+    isParenthesizedExpression,
     // isParameterPropertyDeclaration,
     isPrivateIdentifier,
     isPropertyAccessExpression,
@@ -278,8 +280,14 @@ function startNestedNodes(targetNode: Node, entityName: BindableStaticNameExpres
         const name = getNameOrArgument(entityName);
         const nameText = getElementOrPropertyAccessName(entityName);
         entityName = entityName.expression;
-        if (nameText === "prototype" || isPrivateIdentifier(name)) continue;
-        names.push(name);
+        if (nameText === "prototype" || isPrivateIdentifier(name)) continue;        
+        if (isParenthesizedExpression(name)) {
+            const nameExpr = skipParentheses(name);
+            Debug.assert(isStringOrNumericLiteralLike(nameExpr) || isIdentifier(nameExpr));
+            names.push(nameExpr);
+        } else {
+            names.push(name);
+        }
     }
     names.push(entityName);
     for (let i = names.length - 1; i > 0; i--) {
@@ -937,15 +945,13 @@ function primaryNavBarMenuItems(root: NavigationBarNode): NavigationBarNode[] {
 }
 
 function convertToTree(n: NavigationBarNode): NavigationTree {
-    const rootFilename = isSourceFile(n.node) ? n.node.fileName : n.node.originFilename;
-
     return {
         text: getItemName(n.node, n.name),
         kind: getNodeKind(n.node),
         kindModifiers: getModifiers(n.node),
         spans: getSpans(n),
         nameSpan: n.name && getNodeSpan(n.name),        
-        childItems: map(filter(n.children, x=>x.node.originFilename==rootFilename && x.node.pos < x.node.end), convertToTree),
+        childItems: map(filter(n.children, x=> !isInExternalFileContext(x.node) && x.node.pos < x.node.end), convertToTree),
         // childItems: map(n.children, convertToTree),
     };
 }
@@ -1079,8 +1085,15 @@ function getCalledExpressionName(expr: Expression): string | undefined {
     }
     else if (isPropertyAccessExpression(expr)) {
         const left = getCalledExpressionName(expr.expression);
-        const right = expr.name.text;
-        return left === undefined ? right : `${left}.${right}`;
+        if (isParenthesizedExpression(expr.name)) {
+            const nameExpr = skipParentheses(expr.name);
+            Debug.assert(isStringOrNumericLiteralLike(nameExpr) || isIdentifier(nameExpr));
+            const rightLabel = `(${nameExpr.text})`;
+            return left === undefined ? rightLabel : `${left}->${rightLabel}`;
+        } else {
+            const right = expr.name.text;
+            return left === undefined ? right : `${left}->${right}`;
+        }
     }
     else {
         return undefined;

@@ -505,7 +505,7 @@ object query_shadowing (object obj);
  *
  * True if the object is or once was interactive.
  *
- *
+ * @returns {ob is __LPC_CONFIG_LIBFILES_PLAYER} 1 if ob is or once was interactive, 0 otherwise.
  */
 int query_once_interactive(object ob);
 
@@ -835,18 +835,6 @@ mixed * order_alist(mixed *keys,varargs mixed *|void data );
  *
  *
  */
-/**
- * object_name
- *
- * Return a printable name for an object. This function is called
- * by sprintf() to print a meaningful name in addition to the
- * normal object_name().
- *
- * @deprecated Renamed in LDMud 3.2.6 to printf_obj_name() due to the introduction
-        of an efun with this name.
- *
- */
-string object_name(object ob);
 
 /**
  * member_array
