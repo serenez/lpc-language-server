@@ -115,6 +115,7 @@ import {
     GoToDefinition,
     PossibleProgramFileInfo,
     QuickInfo,
+    findAncestor,
     getTouchingPropertyName,
     isNewExpression,
     ScriptElementKind,
@@ -2283,7 +2284,22 @@ function getSymbolAtLocationForQuickInfo(node: Node, checker: TypeChecker): Symb
         return macroName && checker.resolveName(macroName, node.parent, SymbolFlags.Define, false);                    
     }
 
-    const symbol = checker.getSymbolAtLocation(node);    
+    if (isIdentifier(node) && /^\$\d+$/.test(node.text)) {
+        const inInlineClosure = !!findAncestor(node, n => n.kind === SyntaxKind.InlineClosureExpression);
+        if (inInlineClosure) {
+            return undefined;
+        }
+    }
+
+    const symbol = checker.getSymbolAtLocation(node);
+    if ((!symbol || checker.isUnknownSymbol(symbol)) && isIdentifier(node)) {
+        if (node.parent.kind === SyntaxKind.PropertySignature) {
+            return (node.parent as Declaration).symbol;
+        }
+        if (isDefineDirective(node.parent)) {
+            return (node.parent as Declaration).symbol;
+        }
+    }
     return symbol;
 }
 

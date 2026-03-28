@@ -40,6 +40,7 @@ import {
     FutureSymbolExportInfo,
     Identifier,
     IncompleteCompletionsCache,
+    InlineClosureExpression,
     InterfaceType,
     InterfaceTypeWithDeclaredMembers,
     InternalSymbolName,
@@ -121,6 +122,7 @@ import {
     createTextSpanFromNode,
     diagnosticToString,
     displayPart,
+    displayPartsToString,
     emptyArray,
     escapeSnippetText,
     every,
@@ -207,6 +209,7 @@ import {
     isInJSFile,
     isInString,
     isInTypeQuery,
+    isInlineClosureExpression,
     isInheritDeclaration,
     isInitializedProperty,
     isJSDoc,
@@ -279,6 +282,7 @@ import {
     tryCast,
     tryGetImportFromModuleSpecifier,
     tryGetTextOfPropertyName,
+    typeToDisplayParts,
     walkUpParenthesizedExpressions
 } from "./_namespaces/lpc.js";
 
@@ -585,7 +589,8 @@ export function getCompletionsAtPosition(
     formatContext?: formatting.FormatContext,
     includeSymbol = false,
 ): CompletionInfo | undefined {
-    const { previousToken } = getRelevantTokens(position, sourceFile);
+    try {
+        const { previousToken } = getRelevantTokens(position, sourceFile);
     if (triggerCharacter && !isInCallExpression(sourceFile, position, previousToken) && !isInString(sourceFile, position, previousToken) && !isValidTrigger(sourceFile, triggerCharacter, previousToken, position)) {
         return undefined;
     }
@@ -669,6 +674,15 @@ export function getCompletionsAtPosition(
             return specificKeywordCompletionInfo(completionData.keywordCompletions, completionData.isNewIdentifierLocation);
         default:
             return Debug.assertNever(completionData);
+    }
+    } catch (e) {
+        // Handle loop detection errors, graceful degradation
+        if (e instanceof Error && e.message.includes("getTokenAtPositionWorker")) {
+            log?.(`Completion failed due to token search loop: ${e.message}`);
+            return undefined;
+        }
+        // Re-throw other errors
+        throw e;
     }
 }
 
@@ -1215,6 +1229,14 @@ function completionInfoFromData(
         includeSymbol,
     );
 
+    if (completionKind === CompletionKind.Global && !isRightOfDotOrQuestionDot) {
+        const inlineClosureEntry = createInlineClosureParameterCompletionEntry(contextToken, location, position, sourceFile, checker);
+        if (inlineClosureEntry && !uniqueNames.has(inlineClosureEntry.name)) {
+            uniqueNames.add(inlineClosureEntry.name);
+            insertSorted(entries, inlineClosureEntry, compareCompletionEntries, /*equalityComparer*/ undefined, /*allowDuplicates*/ true);
+        }
+    }
+
     if (keywordFilters !== KeywordCompletionFilters.None) {
         for (const keywordEntry of getKeywordCompletions(keywordFilters, !insideJsDocTagTypeExpression)) {
             if (
@@ -1267,6 +1289,64 @@ function completionInfoFromData(
         optionalReplacementSpan: getOptionalReplacementSpan(location),
         entries,
     };
+}
+
+function createInlineClosureParameterCompletionEntry(
+    contextToken: Node | undefined,
+    location: Node,
+    position: number,
+    sourceFile: SourceFile,
+    checker: TypeChecker,
+): CompletionEntry | undefined {
+    const closure = findAncestor(contextToken ?? location, isInlineClosureExpression);
+    if (!closure) {
+        return undefined;
+    }
+
+    const name = "$1";
+    const typeParts = getInlineClosureParameterTypeDisplayParts(closure, /*index*/ 1, checker);
+    const labelDetails: CompletionEntryLabelDetails | undefined = typeParts
+        ? { detail: `: ${displayPartsToString(typeParts)}` }
+        : undefined;
+    let replacementSpan: TextSpan | undefined;
+    if (position > 0 && sourceFile.text[position - 1] === "$") {
+        replacementSpan = createTextSpanFromBounds(position - 1, position);
+    } else if (sourceFile.text[position] === "$") {
+        replacementSpan = createTextSpanFromBounds(position, position + 1);
+    }
+
+    return {
+        name,
+        kind: ScriptElementKind.parameterElement,
+        kindModifiers: ScriptElementKindModifier.none,
+        sortText: SortText.LocationPriority,
+        labelDetails,
+        replacementSpan,
+    };
+}
+
+function getInlineClosureParameterTypeDisplayParts(
+    closure: InlineClosureExpression,
+    index: number,
+    checker: TypeChecker,
+): SymbolDisplayPart[] | undefined {
+    const contextualType = checker.getContextualType(closure, ContextFlags.Signature | ContextFlags.Completions);
+    const contextualSignatures = contextualType ? checker.getSignaturesOfType(contextualType, SignatureKind.Call) : emptyArray;
+    const contextualSignature = find(contextualSignatures, signature => signature.parameters.length >= index);
+    let paramType: Type | undefined;
+
+    if (contextualSignature) {
+        paramType = checker.getTypeOfSymbolAtLocation(contextualSignature.parameters[index - 1], closure);
+    }
+
+    if (!paramType) {
+        const ownSignature = checker.getSignatureFromDeclaration(closure);
+        if (ownSignature && ownSignature.parameters.length >= index) {
+            paramType = checker.getTypeOfSymbolAtLocation(ownSignature.parameters[index - 1], closure);
+        }
+    }
+
+    return paramType ? typeToDisplayParts(checker, paramType, closure) : undefined;
 }
 
 function isCheckedFile(sourceFile: SourceFile, compilerOptions: CompilerOptions): boolean {
@@ -2437,6 +2517,12 @@ export function getCompletionEntriesFromSymbols(
 
     function shouldIncludeSymbol(symbol: Symbol, symbolToSortTextMap: SymbolSortTextMap): boolean {
         let allFlags = symbol.flags;        
+        if (typeChecker.isArgumentsSymbol(symbol)) {
+            return false;
+        }
+        if (symbol.name === InternalSymbolName.ExportEquals) {
+            return false;
+        }
         if (!isSourceFile(location)) {
             // export = /**/ here we want to get all meanings, so any symbol is ok
             // if (isExportAssignment(location.parent)) {
@@ -2636,6 +2722,19 @@ export function getCompletionEntryDetails(
     const { previousToken, contextToken } = getRelevantTokens(position, sourceFile);
     if (isInString(sourceFile, position, previousToken)) {
         return StringCompletions.getStringLiteralCompletionDetails(name, sourceFile, position, previousToken, program, host, cancellationToken, preferences);
+    }
+
+    if (name === "$1") {
+        const closure = findAncestor(contextToken ?? previousToken ?? sourceFile, isInlineClosureExpression);
+        if (closure) {
+            const typeParts = getInlineClosureParameterTypeDisplayParts(closure, /*index*/ 1, typeChecker);
+            const displayParts = [displayPart(name, SymbolDisplayPartKind.parameterName)];
+            if (typeParts?.length) {
+                displayParts.push(displayPart(": ", SymbolDisplayPartKind.punctuation));
+                displayParts.push(...typeParts);
+            }
+            return createCompletionDetails(name, ScriptElementKindModifier.none, ScriptElementKind.parameterElement, displayParts);
+        }
     }
 
     // Compute all the completion symbols again.
@@ -5208,6 +5307,7 @@ function isValidTrigger(sourceFile: SourceFile, triggerCharacter: CompletionsTri
     switch (triggerCharacter) {
         case ".":
         case "@":
+        case "$":
             return true;
         case '"':
         case "'":
